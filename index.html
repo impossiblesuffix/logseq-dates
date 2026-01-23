@@ -269,6 +269,18 @@
             color: white;
         }
         
+        .freq-btn {
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-weight: 500;
+        }
+        
+        .freq-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
         @media (max-width: 600px) {
             body {
                 padding: 10px;
@@ -276,6 +288,7 @@
             
             .row, .habit-config {
                 grid-template-columns: 1fr;
+                gap: 18px;
             }
             
             h1 {
@@ -315,8 +328,17 @@
             input[type="number"],
             input[type="text"],
             select {
-                padding: 14px 16px;
+                padding: 13px 10px;
                 font-size: 16px;
+            }
+            
+            input[type="date"] {
+                padding: 12px 10px;
+                letter-spacing: -0.2px;
+            }
+            
+            input[type="text"] {
+                text-align: left;
             }
             
             textarea {
@@ -345,6 +367,15 @@
                 margin-bottom: 25px;
             }
             
+            .form-group {
+                margin-bottom: 18px;
+            }
+            
+            label {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+            
             .habit-item {
                 padding: 14px;
             }
@@ -364,6 +395,13 @@
             
             .custom-habit-input button {
                 width: 100%;
+            }
+            
+            .freq-btn {
+                flex: 1 1 calc(25% - 6px) !important;
+                min-width: 45px !important;
+                padding: 12px 8px !important;
+                font-size: 16px !important;
             }
         }
     </style>
@@ -581,9 +619,16 @@
                         <div class="form-group" style="margin: 0;">
                             ${habit.type === 'unscheduled' ? `
                                 <label>Times per week</label>
-                                <input type="number" min="1" max="7" value="${habit.frequency}" 
-                                    onchange="updateHabit(${habit.id}, 'frequency', this.value)"
-                                    style="padding: 8px;">
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                    ${[1,2,3,4,5,6,7].map(n => `
+                                        <button type="button" 
+                                            onclick="updateHabit(${habit.id}, 'frequency', ${n}); renderHabits();"
+                                            style="flex: 1 1 calc(25% - 6px); min-width: 40px; padding: 10px 8px; font-size: 15px; ${habit.frequency == n ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;' : 'background: white; color: #667eea; border: 2px solid #667eea;'}"
+                                            class="freq-btn">
+                                            ${n}x
+                                        </button>
+                                    `).join('')}
+                                </div>
                             ` : habit.type === 'specific-day' ? `
                                 <label>Date</label>
                                 <input type="date" value="${habit.specificDate}"
