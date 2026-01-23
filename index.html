@@ -29,7 +29,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #d35a46 0%, #b84a3a 100%);
+            background: linear-gradient(135deg, #b0513f 0%, #8d3d2f 100%);
             padding: 30px;
             color: white;
             text-align: center;
@@ -63,7 +63,7 @@
             content: '';
             width: 4px;
             height: 20px;
-            background: linear-gradient(135deg, #d35a46 0%, #b84a3a 100%);
+            background: linear-gradient(135deg, #b0513f 0%, #8d3d2f 100%);
             border-radius: 2px;
         }
         
@@ -98,7 +98,7 @@
         input[type="text"]:focus,
         select:focus {
             outline: none;
-            border-color: #d35a46;
+            border-color: #b0513f;
             background: #3a3a3a;
         }
         
@@ -113,7 +113,7 @@
         }
         
         input[type="checkbox"] {
-            accent-color: #d35a46;
+            accent-color: #b0513f;
         }
         
         .quick-options {
@@ -134,20 +134,18 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #d35a46 0%, #b84a3a 100%);
+            background: linear-gradient(135deg, #b0513f 0%, #8d3d2f 100%);
             color: white;
-            box-shadow: 0 4px 12px rgba(211, 90, 70, 0.3);
         }
         
         .btn-primary:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(211, 90, 70, 0.4);
         }
         
         .btn-secondary {
             background: #2a2a2a;
-            color: #d35a46;
-            border: 2px solid #d35a46;
+            color: #b0513f;
+            border: 2px solid #b0513f;
         }
         
         .btn-secondary:hover {
@@ -181,7 +179,7 @@
         
         textarea:focus {
             outline: none;
-            border-color: #d35a46;
+            border-color: #b0513f;
             background: #3a3a3a;
         }
         
@@ -233,7 +231,7 @@
         }
         
         .habit-item:hover {
-            border-color: #d35a46;
+            border-color: #b0513f;
         }
         
         .habit-header {
@@ -277,12 +275,12 @@
             padding: 8px 14px;
             font-size: 13px;
             background: #2a2a2a;
-            color: #d35a46;
-            border: 1.5px solid #d35a46;
+            color: #b0513f;
+            border: 1.5px solid #b0513f;
         }
         
         .btn-preset:hover {
-            background: #d35a46;
+            background: #b0513f;
             color: white;
         }
         
@@ -295,7 +293,6 @@
         
         .freq-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(211, 90, 70, 0.3);
         }
         
         @media (max-width: 600px) {
@@ -653,7 +650,7 @@
                                     ${[1,2,3,4,5,6,7].map(n => `
                                         <button type="button" 
                                             onclick="updateHabit(${habit.id}, 'frequency', ${n}); renderHabits();"
-                                            style="flex: 1 1 calc(25% - 6px); min-width: 40px; padding: 10px 8px; font-size: 15px; ${habit.frequency == n ? 'background: linear-gradient(135deg, #d35a46 0%, #b84a3a 100%); color: white;' : 'background: #2a2a2a; color: #d35a46; border: 2px solid #d35a46;'}"
+                                            style="flex: 1 1 calc(25% - 6px); min-width: 40px; padding: 10px 8px; font-size: 15px; ${habit.frequency == n ? 'background: linear-gradient(135deg, #b0513f 0%, #8d3d2f 100%); color: white;' : 'background: #2a2a2a; color: #b0513f; border: 2px solid #b0513f;'}"
                                             class="freq-btn">
                                             ${n}x
                                         </button>
@@ -754,16 +751,16 @@
             const endFormatted = formatDate(endDate);
             output.push(`- Plan ${startFormatted} to ${endFormatted}`);
             
-            // Calculate number of weeks in range
+            // Calculate number of days in range
             const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-            const weekCount = Math.ceil(daysDiff / 7);
             
             // Generate unscheduled habits section
             const unscheduledHabits = habits.filter(h => h.type === 'unscheduled');
             if (unscheduledHabits.length > 0) {
                 output.push('  - Unscheduled');
                 unscheduledHabits.forEach(habit => {
-                    const count = habit.frequency * weekCount;
+                    // Calculate proportional count based on actual days
+                    const count = Math.round((daysDiff / 7) * habit.frequency);
                     for (let i = 0; i < count; i++) {
                         output.push(`    - ${addTodo ? 'TODO ' : ''}${habit.name}`);
                     }
