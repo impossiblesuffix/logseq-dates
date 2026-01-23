@@ -596,12 +596,12 @@
             const habit = {
                 id: Date.now(),
                 name: name,
-                type: 'unscheduled', // 'unscheduled', 'specific-day', 'weekly-day'
+                type: 'unscheduled', // 'unscheduled', 'daily', 'specific-day', 'weekly-day'
                 frequency: 1,
                 specificDate: '',
                 weekday: 'Monday'
             };
-            habits.push(habit);
+            habits.unshift(habit); // Add to beginning of array
             renderHabits();
         }
         
