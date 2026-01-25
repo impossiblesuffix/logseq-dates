@@ -979,20 +979,7 @@
         // Calculate number of days in range
         const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
         
-        // Generate unscheduled habits section
-        const unscheduledHabits = habits.filter(h => h.type === 'unscheduled');
-        if (unscheduledHabits.length > 0) {
-            output.push('  - Unscheduled');
-            unscheduledHabits.forEach(habit => {
-                // Calculate proportional count based on actual days
-                const count = Math.round((daysDiff / 7) * habit.frequency);
-                for (let i = 0; i < count; i++) {
-                    output.push(`    - ${addTodo ? 'TODO ' : ''}${habit.name}`);
-                }
-            });
-        }
-        
-        // Add Notes section
+        // Add Notes section at top
         output.push('  - Notes');
         
         // Generate dated sections
@@ -1033,26 +1020,43 @@
         
         // Generate date sections
         if (groupByWeeks) {
-            // Group by weeks
+            // Group by 7-day periods
             currentDate = new Date(startDate);
             let weekNumber = 1;
-            let currentWeekStart = new Date(currentDate);
-            
-            // Find the start of the week (Monday)
-            const dayOfWeek = currentDate.getDay();
-            const daysUntilMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-            currentWeekStart.setDate(currentDate.getDate() - daysUntilMonday);
+            let dayCount = 0;
+            const unscheduledHabits = habits.filter(h => h.type === 'unscheduled');
             
             while (currentDate <= endDate) {
-                // Calculate next Monday
-                const nextMonday = new Date(currentWeekStart);
-                nextMonday.setDate(nextMonday.getDate() + 7);
-                
                 // Output week header
                 output.push(`  - ## Week ${weekNumber}`);
                 
-                // Output dates in this week
-                while (currentDate <= endDate && currentDate < nextMonday) {
+                // Calculate how many days will be in this week
+                let daysRemainingInRange = 0;
+                let tempDate = new Date(currentDate);
+                while (tempDate <= endDate && daysRemainingInRange < 7) {
+                    daysRemainingInRange++;
+                    tempDate.setDate(tempDate.getDate() + 1);
+                }
+                
+                // Add unscheduled section for this week
+                if (unscheduledHabits.length > 0) {
+                    output.push('    - Unscheduled');
+                    unscheduledHabits.forEach(habit => {
+                        // For full weeks (7 days), use the frequency
+                        // For partial weeks, scale proportionally
+                        const count = daysRemainingInRange === 7 ? 
+                            habit.frequency : 
+                            Math.round((daysRemainingInRange / 7) * habit.frequency);
+                        
+                        for (let i = 0; i < count; i++) {
+                            output.push(`      - ${addTodo ? 'TODO ' : ''}${habit.name}`);
+                        }
+                    });
+                }
+                
+                // Output up to 7 days (or until endDate)
+                let daysInThisWeek = 0;
+                while (currentDate <= endDate && daysInThisWeek < 7) {
                     const formattedDate = formatDate(currentDate);
                     const indent = useHeadings ? '    - ### ' : '    - ';
                     let line = indent;
@@ -1077,13 +1081,28 @@
                     }
                     
                     currentDate.setDate(currentDate.getDate() + 1);
+                    daysInThisWeek++;
+                    dayCount++;
                 }
                 
                 weekNumber++;
-                currentWeekStart = new Date(nextMonday);
             }
         } else {
             // No week grouping - original behavior
+            const unscheduledHabits = habits.filter(h => h.type === 'unscheduled');
+            
+            // Add unscheduled section
+            if (unscheduledHabits.length > 0) {
+                output.push('  - Unscheduled');
+                unscheduledHabits.forEach(habit => {
+                    // Calculate proportional count based on actual days
+                    const count = Math.round((daysDiff / 7) * habit.frequency);
+                    for (let i = 0; i < count; i++) {
+                        output.push(`    - ${addTodo ? 'TODO ' : ''}${habit.name}`);
+                    }
+                });
+            }
+            
             currentDate = new Date(startDate);
             while (currentDate <= endDate) {
                 const formattedDate = formatDate(currentDate);
