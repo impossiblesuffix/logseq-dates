@@ -670,7 +670,10 @@
             selectedDates: [],
             isWorkSchedule: isWorkSchedule,
             workDates: {},
-            currentWorkType: 'A WFH'
+            currentWorkType: 'A WFH',
+            repeatPattern: 'every-n-days',
+            repeatInterval: 2,
+            repeatStartDate: ''
         };
         habits.unshift(habit);
         renderHabits();
@@ -832,6 +835,7 @@
                         <select onchange="updateHabit(${habit.id}, 'type', this.value)" style="padding: 8px;">
                             <option value="unscheduled" ${habit.type === 'unscheduled' ? 'selected' : ''}>Unscheduled bullets</option>
                             <option value="daily" ${habit.type === 'daily' ? 'selected' : ''}>Daily (every day)</option>
+                            <option value="repeating" ${habit.type === 'repeating' ? 'selected' : ''}>Repeating pattern</option>
                             <option value="selected-dates" ${habit.type === 'selected-dates' ? 'selected' : ''}>Selected dates</option>
                             <option value="specific-day" ${habit.type === 'specific-day' ? 'selected' : ''}>Specific date</option>
                             <option value="weekly-day" ${habit.type === 'weekly-day' ? 'selected' : ''}>Weekly on day</option>
@@ -852,6 +856,30 @@
                             </div>
                         ` : habit.type === 'daily' ? `
                             <label style="color: #888;">Will appear on every day</label>
+                        ` : habit.type === 'repeating' ? `
+                            <label>Repeat Pattern</label>
+                            <select onchange="updateHabit(${habit.id}, 'repeatPattern', this.value); renderHabits();" style="padding: 8px; margin-bottom: 8px;">
+                                <option value="every-n-days" ${habit.repeatPattern === 'every-n-days' ? 'selected' : ''}>Every N days</option>
+                                <option value="weekdays" ${habit.repeatPattern === 'weekdays' ? 'selected' : ''}>Weekdays only (Mon-Fri)</option>
+                                <option value="weekends" ${habit.repeatPattern === 'weekends' ? 'selected' : ''}>Weekends only (Sat-Sun)</option>
+                            </select>
+                            ${habit.repeatPattern === 'every-n-days' ? `
+                                <label>Every how many days?</label>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+                                    ${[2,3,4,5,6,7].map(n => `
+                                        <button type="button" 
+                                            onclick="updateHabit(${habit.id}, 'repeatInterval', ${n}); renderHabits();"
+                                            style="flex: 1 1 calc(33.33% - 6px); min-width: 50px; padding: 10px 8px; font-size: 15px; ${habit.repeatInterval == n ? 'background: linear-gradient(135deg, #b0513f 0%, #8d3d2f 100%); color: white;' : 'background: #2a2a2a; color: #b0513f; border: 2px solid #b0513f;'}"
+                                            class="freq-btn">
+                                            ${n}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            <label>Start date (first occurrence)</label>
+                            <input type="date" value="${habit.repeatStartDate || ''}"
+                                onchange="updateHabit(${habit.id}, 'repeatStartDate', this.value)"
+                                style="padding: 8px;">
                         ` : habit.type === 'selected-dates' ? `
                             <label>Select dates (tap to toggle)</label>
                             <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: 8px; background: #333; border-radius: 6px;">
@@ -995,6 +1023,35 @@
             habits.filter(h => h.type === 'daily')
                 .forEach(h => dateToHabits.get(dateKey).push(h.name));
             
+            // Add repeating habits
+            habits.filter(h => h.type === 'repeating').forEach(h => {
+                if (h.repeatPattern === 'every-n-days') {
+                    // Every N days pattern
+                    if (h.repeatStartDate) {
+                        const startDate = new Date(h.repeatStartDate);
+                        const currentDateObj = new Date(dateKey);
+                        const daysDiff = Math.floor((currentDateObj - startDate) / (1000 * 60 * 60 * 24));
+                        
+                        // Check if this date falls on the interval
+                        if (daysDiff >= 0 && daysDiff % (h.repeatInterval || 2) === 0) {
+                            dateToHabits.get(dateKey).push(h.name);
+                        }
+                    }
+                } else if (h.repeatPattern === 'weekdays') {
+                    // Monday-Friday only
+                    const dayOfWeek = new Date(dateKey).getDay();
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                        dateToHabits.get(dateKey).push(h.name);
+                    }
+                } else if (h.repeatPattern === 'weekends') {
+                    // Saturday-Sunday only
+                    const dayOfWeek = new Date(dateKey).getDay();
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        dateToHabits.get(dateKey).push(h.name);
+                    }
+                }
+            });
+            
             // Add selected-dates habits
             habits.filter(h => h.type === 'selected-dates').forEach(h => {
                 if (h.isWorkSchedule && h.workDates && h.workDates[dateKey]) {
@@ -1022,11 +1079,14 @@
         if (groupByWeeks) {
             // Group by 7-day periods
             currentDate = new Date(startDate);
-            let weekNumber = 1;
-            let dayCount = 0;
+            let currentMonth = currentDate.getMonth();
             const unscheduledHabits = habits.filter(h => h.type === 'unscheduled');
             
             while (currentDate <= endDate) {
+                // Calculate actual week number based on day of month
+                const dayOfMonth = currentDate.getDate();
+                const weekNumber = Math.ceil(dayOfMonth / 7);
+                
                 // Output week header
                 output.push(`  - ## Week ${weekNumber}`);
                 
@@ -1034,6 +1094,11 @@
                 let daysRemainingInRange = 0;
                 let tempDate = new Date(currentDate);
                 while (tempDate <= endDate && daysRemainingInRange < 7) {
+                    // Stop at week boundary (when we'd enter next week of month)
+                    const tempDayOfMonth = tempDate.getDate();
+                    const tempWeekNumber = Math.ceil(tempDayOfMonth / 7);
+                    if (tempWeekNumber !== weekNumber) break;
+                    
                     daysRemainingInRange++;
                     tempDate.setDate(tempDate.getDate() + 1);
                 }
@@ -1054,9 +1119,9 @@
                     });
                 }
                 
-                // Output up to 7 days (or until endDate)
+                // Output up to 7 days (or until week boundary/endDate)
                 let daysInThisWeek = 0;
-                while (currentDate <= endDate && daysInThisWeek < 7) {
+                while (currentDate <= endDate && daysInThisWeek < daysRemainingInRange) {
                     const formattedDate = formatDate(currentDate);
                     const indent = useHeadings ? '    - ### ' : '    - ';
                     let line = indent;
@@ -1082,10 +1147,7 @@
                     
                     currentDate.setDate(currentDate.getDate() + 1);
                     daysInThisWeek++;
-                    dayCount++;
                 }
-                
-                weekNumber++;
             }
         } else {
             // No week grouping - original behavior
