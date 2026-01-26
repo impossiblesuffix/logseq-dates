@@ -751,13 +751,9 @@
             }
             
             try {
-                // Save current habits as defaults (personal storage)
-                const result = await window.storage.set('default-habits', JSON.stringify(habits), false);
-                if (result) {
-                    alert(`✓ Saved ${habits.length} habit(s) as your defaults`);
-                } else {
-                    alert('Failed to save defaults. Please try again.');
-                }
+                // Save current habits as defaults using localStorage
+                localStorage.setItem('logseq-planner-defaults', JSON.stringify(habits));
+                alert(`✓ Saved ${habits.length} habit(s) as your defaults`);
             } catch (error) {
                 console.error('Error saving defaults:', error);
                 alert('Error saving defaults: ' + error.message);
@@ -766,14 +762,14 @@
         
         async function loadDefaultHabits() {
             try {
-                const result = await window.storage.get('default-habits', false);
+                const savedData = localStorage.getItem('logseq-planner-defaults');
                 
-                if (!result || !result.value) {
+                if (!savedData) {
                     alert('No saved defaults found. Use "Save Defaults" to save your current habits.');
                     return;
                 }
                 
-                const loadedHabits = JSON.parse(result.value);
+                const loadedHabits = JSON.parse(savedData);
                 
                 if (habits.length > 0) {
                     if (!confirm(`This will replace your current ${habits.length} habit(s) with ${loadedHabits.length} saved default(s). Continue?`)) {
