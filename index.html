@@ -587,7 +587,13 @@
             
             <!-- Habits & Events Section -->
             <div class="section">
-                <div class="section-title">Habits & Events</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div class="section-title" style="margin-bottom: 0;">Habits & Events</div>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn-secondary" onclick="saveDefaultHabits()" style="padding: 6px 12px; font-size: 13px;">Save Defaults</button>
+                        <button class="btn-secondary" onclick="loadDefaultHabits()" style="padding: 6px 12px; font-size: 13px;">Load Defaults</button>
+                    </div>
+                </div>
                 
                 <div class="form-group">
                     <label>Quick Add Common Items</label>
@@ -710,6 +716,7 @@
                 frequency: 1,
                 specificDate: '',
                 weekday: 'Monday',
+                monthDay: 1,
                 selectedDates: [],
                 isWorkSchedule: isWorkSchedule,
                 workDates: {},
@@ -734,6 +741,57 @@
                 if (field === 'type') {
                     renderHabits();
                 }
+            }
+        }
+        
+        async function saveDefaultHabits() {
+            if (habits.length === 0) {
+                alert('No habits to save. Add some habits first.');
+                return;
+            }
+            
+            try {
+                // Save current habits as defaults (personal storage)
+                const result = await window.storage.set('default-habits', JSON.stringify(habits), false);
+                if (result) {
+                    alert(`✓ Saved ${habits.length} habit(s) as your defaults`);
+                } else {
+                    alert('Failed to save defaults. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error saving defaults:', error);
+                alert('Error saving defaults: ' + error.message);
+            }
+        }
+        
+        async function loadDefaultHabits() {
+            try {
+                const result = await window.storage.get('default-habits', false);
+                
+                if (!result || !result.value) {
+                    alert('No saved defaults found. Use "Save Defaults" to save your current habits.');
+                    return;
+                }
+                
+                const loadedHabits = JSON.parse(result.value);
+                
+                if (habits.length > 0) {
+                    if (!confirm(`This will replace your current ${habits.length} habit(s) with ${loadedHabits.length} saved default(s). Continue?`)) {
+                        return;
+                    }
+                }
+                
+                // Generate new IDs for loaded habits to avoid conflicts
+                habits = loadedHabits.map(h => ({
+                    ...h,
+                    id: Date.now() + Math.random()
+                }));
+                
+                renderHabits();
+                alert(`✓ Loaded ${habits.length} default habit(s)`);
+            } catch (error) {
+                console.error('Error loading defaults:', error);
+                alert('No saved defaults found yet. Add habits and click "Save Defaults" first.');
             }
         }
         
@@ -878,10 +936,11 @@
                             <select onchange="updateHabit(${habit.id}, 'type', this.value)" style="padding: 8px;">
                                 <option value="unscheduled" ${habit.type === 'unscheduled' ? 'selected' : ''}>Unscheduled bullets</option>
                                 <option value="daily" ${habit.type === 'daily' ? 'selected' : ''}>Daily (every day)</option>
+                                <option value="weekly-day" ${habit.type === 'weekly-day' ? 'selected' : ''}>Every week on...</option>
+                                <option value="monthly-day" ${habit.type === 'monthly-day' ? 'selected' : ''}>Every month on...</option>
                                 <option value="repeating" ${habit.type === 'repeating' ? 'selected' : ''}>Repeating pattern</option>
                                 <option value="selected-dates" ${habit.type === 'selected-dates' ? 'selected' : ''}>Selected dates</option>
                                 <option value="specific-day" ${habit.type === 'specific-day' ? 'selected' : ''}>Specific date</option>
-                                <option value="weekly-day" ${habit.type === 'weekly-day' ? 'selected' : ''}>Weekly on day</option>
                             </select>
                         </div>
                         <div class="form-group" style="margin: 0;">
@@ -933,7 +992,7 @@
                                 <input type="date" value="${habit.specificDate}"
                                     onchange="updateHabit(${habit.id}, 'specificDate', this.value)"
                                     style="padding: 8px;">
-                            ` : `
+                            ` : habit.type === 'weekly-day' ? `
                                 <label>Day of week</label>
                                 <select onchange="updateHabit(${habit.id}, 'weekday', this.value)" style="padding: 8px;">
                                     <option ${habit.weekday === 'Sunday' ? 'selected' : ''}>Sunday</option>
@@ -944,7 +1003,14 @@
                                     <option ${habit.weekday === 'Friday' ? 'selected' : ''}>Friday</option>
                                     <option ${habit.weekday === 'Saturday' ? 'selected' : ''}>Saturday</option>
                                 </select>
-                            `}
+                            ` : habit.type === 'monthly-day' ? `
+                                <label>Day of month</label>
+                                <select onchange="updateHabit(${habit.id}, 'monthDay', this.value)" style="padding: 8px;">
+                                    ${Array.from({length: 31}, (_, i) => i + 1).map(day => `
+                                        <option value="${day}" ${(habit.monthDay || 1) == day ? 'selected' : ''}>${day}${getOrdinalSuffix(day)}</option>
+                                    `).join('')}
+                                </select>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -968,6 +1034,16 @@
             const week1 = new Date(tempDate.getFullYear(), 0, 4);
             // Calculate week number
             return 1 + Math.round(((tempDate.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        }
+        
+        function getOrdinalSuffix(day) {
+            if (day > 3 && day < 21) return 'th';
+            switch (day % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
         }
         
         function formatDate(date) {
@@ -1154,6 +1230,11 @@
                 // Add weekly habits
                 const dayName = currentDate.toLocaleDateString('en-GB', { weekday: 'long' });
                 habits.filter(h => h.type === 'weekly-day' && h.weekday === dayName)
+                    .forEach(h => dateToHabits.get(dateKey).push(h.name));
+                
+                // Add monthly habits
+                const dayOfMonth = currentDate.getDate();
+                habits.filter(h => h.type === 'monthly-day' && h.monthDay == dayOfMonth)
                     .forEach(h => dateToHabits.get(dateKey).push(h.name));
                 
                 currentDate.setDate(currentDate.getDate() + 1);
