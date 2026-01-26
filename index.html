@@ -590,8 +590,9 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <div class="section-title" style="margin-bottom: 0;">Habits & Events</div>
                     <div style="display: flex; gap: 6px;">
-                        <button class="btn-secondary" onclick="saveDefaultHabits()" style="padding: 6px 12px; font-size: 13px;">Save Defaults</button>
-                        <button class="btn-secondary" onclick="loadDefaultHabits()" style="padding: 6px 12px; font-size: 13px;">Load Defaults</button>
+                        <button class="btn-secondary" onclick="saveDefaultHabits()" style="padding: 6px 12px; font-size: 13px;">Export Habits</button>
+                        <button class="btn-secondary" onclick="loadDefaultHabits()" style="padding: 6px 12px; font-size: 13px;">Import Habits</button>
+                        <input type="file" id="habitFileInput" accept=".json" onchange="handleHabitFileUpload(event)" style="display: none;">
                     </div>
                 </div>
                 
@@ -744,51 +745,79 @@
             }
         }
         
-        async function saveDefaultHabits() {
+        function saveDefaultHabits() {
             if (habits.length === 0) {
                 alert('No habits to save. Add some habits first.');
                 return;
             }
             
             try {
-                // Save current habits as defaults using localStorage
-                localStorage.setItem('logseq-planner-defaults', JSON.stringify(habits));
-                alert(`✓ Saved ${habits.length} habit(s) as your defaults`);
+                // Create JSON file with habits
+                const dataStr = JSON.stringify(habits, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                // Create download link
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'logseq-planner-habits.json';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                alert(`✓ Saved ${habits.length} habit(s) to file`);
             } catch (error) {
                 console.error('Error saving defaults:', error);
                 alert('Error saving defaults: ' + error.message);
             }
         }
         
-        async function loadDefaultHabits() {
-            try {
-                const savedData = localStorage.getItem('logseq-planner-defaults');
-                
-                if (!savedData) {
-                    alert('No saved defaults found. Use "Save Defaults" to save your current habits.');
-                    return;
-                }
-                
-                const loadedHabits = JSON.parse(savedData);
-                
-                if (habits.length > 0) {
-                    if (!confirm(`This will replace your current ${habits.length} habit(s) with ${loadedHabits.length} saved default(s). Continue?`)) {
+        function loadDefaultHabits() {
+            // Trigger file input click
+            document.getElementById('habitFileInput').click();
+        }
+        
+        function handleHabitFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedHabits = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(loadedHabits) || loadedHabits.length === 0) {
+                        alert('Invalid habits file or file is empty.');
                         return;
                     }
+                    
+                    if (habits.length > 0) {
+                        if (!confirm(`This will replace your current ${habits.length} habit(s) with ${loadedHabits.length} saved habit(s). Continue?`)) {
+                            return;
+                        }
+                    }
+                    
+                    // Generate new IDs for loaded habits to avoid conflicts
+                    habits = loadedHabits.map(h => ({
+                        ...h,
+                        id: Date.now() + Math.random()
+                    }));
+                    
+                    renderHabits();
+                    alert(`✓ Loaded ${habits.length} habit(s) from file`);
+                } catch (error) {
+                    console.error('Error loading habits:', error);
+                    alert('Error loading file. Make sure it\'s a valid habits file.');
                 }
-                
-                // Generate new IDs for loaded habits to avoid conflicts
-                habits = loadedHabits.map(h => ({
-                    ...h,
-                    id: Date.now() + Math.random()
-                }));
-                
-                renderHabits();
-                alert(`✓ Loaded ${habits.length} default habit(s)`);
-            } catch (error) {
-                console.error('Error loading defaults:', error);
-                alert('No saved defaults found yet. Add habits and click "Save Defaults" first.');
-            }
+            };
+            
+            reader.readAsText(file);
+            
+            // Reset file input so same file can be selected again
+            event.target.value = '';
         }
         
         function toggleDate(habitId, dateKey) {
