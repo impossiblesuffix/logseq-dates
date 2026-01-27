@@ -2332,6 +2332,18 @@
                 // Check if this is a week header and we have unscheduled habits
                 const weekMatch = line.match(weekHeaderPattern);
                 if (weekMatch && unscheduledHabits.length > 0) {
+                    // First, output any property lines that follow this header (like collapsed:: true)
+                    while (i + 1 < importState.originalLines.length) {
+                        const nextLine = importState.originalLines[i + 1];
+                        // Check if it's a property line (word:: value format, indented)
+                        if (/^\s+\S+::\s*/.test(nextLine)) {
+                            output.push(nextLine);
+                            i++;
+                        } else {
+                            break;
+                        }
+                    }
+                    
                     // Look ahead to find dates under THIS specific week header
                     // and count how many are in our selected range
                     let j = i + 1;
@@ -2388,6 +2400,18 @@
                     if (parsedDate) {
                         const dateKey = parsedDate.toISOString().split('T')[0];
                         const habitsToAdd = dateToNewHabits.get(dateKey) || [];
+                        
+                        // First, output any property lines that follow this date (like collapsed:: true)
+                        while (i + 1 < importState.originalLines.length) {
+                            const nextLine = importState.originalLines[i + 1];
+                            // Check if it's a property line (word:: value format, indented)
+                            if (/^\s+\S+::\s*/.test(nextLine)) {
+                                output.push(nextLine);
+                                i++;
+                            } else {
+                                break;
+                            }
+                        }
                         
                         if (habitsToAdd.length > 0) {
                             const currentIndent = line.match(/^(\s*)/)[0].length;
