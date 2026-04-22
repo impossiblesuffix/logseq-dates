@@ -1400,41 +1400,60 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
 
 /* ── Mobile layout ───────────────────────────────────────────────── */
 @media (hover: none) {
-  /* Two-row pill: text on row 1, indicators + actions on row 2.
-     ::after is a zero-height flex item that forces a line break. */
-  .pill { flex-wrap: wrap; align-items: center; }
-  .pill::after {
-    content: ''; flex-basis: 100%; height: 0;
-    order: 1; /* sits between row-1 items (order 0) and row-2 items (order 2) */
-  }
+  /* Restore drag handle so reordering still works */
+  .task-row .drag-handle { opacity: 1 !important; }
 
-  /* Row 1 */
-  .pill-chk, .pill-event-icon, .collapse-btn { order: 0; flex-shrink: 0; }
-  .pill-text { order: 0; flex: 1; min-width: 0; }
-
-  /* Row 2: indicators and actions */
-  .time-badge-wrap, .sched-btn, .repeat-badge,
-  .notes-btn, .task-del { order: 2; flex-shrink: 0; margin-top: 3px; }
-  .task-del { margin-left: auto; } /* push × to far right on row 2 */
-
-  /* Hide hover-only clutter entirely (saves space and reduces noise) */
+  /* Hide all inline action buttons — accessed via ⋯ menu instead */
   .task-row .evt-toggle,
   .task-row .move-btn,
   .task-row .repeat-btn,
-  .task-row .date-btn:not(.has-date),
-  .task-row .drag-handle { display: none !important; }
-
-  /* Reveal tap-accessible action buttons */
-  .task-row .task-del,
-  .task-row .header-del,
+  .task-row .repeat-badge,
+  .task-row .date-btn,
   .task-row .notes-btn,
-  .task-row .sched-btn { opacity: 1 !important; }
+  .task-row .sched-btn,
+  .task-row .task-del,
+  .task-row .header-del { display: none !important; }
 
-  /* Show zoom buttons only on touch */
-  .tl-zoom-btns { display: flex; }
+  /* Show ⋯ menu button and zoom buttons */
+  .task-menu-btn { display: flex !important; }
+  .tl-zoom-btns  { display: flex; }
 }
 
-/* Hide zoom buttons on desktop (shown only on touch via above rule) */
+/* ── Task context menu button (hidden on desktop) ────────────────── */
+.task-menu-btn {
+  display: none;
+  flex-shrink: 0; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  padding: 2px 5px; font-size: 16px; line-height: 1;
+  color: #b0b0c0; cursor: pointer; font-family: inherit;
+  touch-action: manipulation; letter-spacing: 1px;
+}
+.task-menu-btn:active { color: #4f46e5; }
+
+/* ── Task context menu dropdown ──────────────────────────────────── */
+.task-ctx-menu {
+  position: fixed; z-index: 600;
+  background: #fff; border: 1px solid #e0e0ea;
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,.14), 0 0 0 1px rgba(0,0,0,.04);
+  min-width: 172px;
+}
+.task-ctx-item {
+  display: block; width: 100%; border: none; background: transparent;
+  padding: 13px 18px; text-align: left;
+  font-size: 14px; font-family: inherit; font-weight: 500;
+  color: #18181b; cursor: pointer; touch-action: manipulation;
+  transition: background .1s;
+}
+.task-ctx-item + .task-ctx-item { border-top: 1px solid #f0f0f4; }
+.task-ctx-item:active { background: #f0f0f8; }
+.task-ctx-item.ctx-danger { color: #ef4444; }
+body.dark .task-ctx-menu { background: #1e1e28; border-color: #2e2e3c; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+body.dark .task-ctx-item { color: #d0d0d8; }
+body.dark .task-ctx-item + .task-ctx-item { border-color: #28283a; }
+body.dark .task-ctx-item:active { background: #28283c; }
+
+/* Hide zoom buttons on desktop */
 .tl-zoom-btns { display: none; }
 
 /* ── Schedule button (clock icon on unscheduled tasks) ───────────── */
@@ -2526,7 +2545,9 @@ function renderTasks() {
         tasks = tasks.filter(t => !subtree.includes(t));
         rerender();
       });
-      pill.append(icon, txt, del);
+      const hMenuBtn = document.createElement('button'); hMenuBtn.className = 'task-menu-btn'; hMenuBtn.textContent = '⋯';
+      hMenuBtn.addEventListener('pointerdown', e => { e.stopPropagation(); openTaskMenu(task, hMenuBtn); });
+      pill.append(icon, txt, del, hMenuBtn);
     } else {
       // ── Task / Event row ──
       const isUnscheduled = !effectiveDone && (!task.sched || !task.sched.t);
@@ -2658,6 +2679,10 @@ function renderTasks() {
         schedBtn.addEventListener('click', e => { e.stopPropagation(); openSchedModal(task); });
         pill.appendChild(schedBtn);
       }
+
+      const menuBtn = document.createElement('button'); menuBtn.className = 'task-menu-btn'; menuBtn.textContent = '⋯';
+      menuBtn.addEventListener('pointerdown', e => { e.stopPropagation(); openTaskMenu(task, menuBtn); });
+      pill.appendChild(menuBtn);
 
       pill.addEventListener('mouseenter',()=>setHL(task.id,true));
       pill.addEventListener('mouseleave',()=>setHL(task.id,false));
@@ -3781,6 +3806,57 @@ let _repeatDOM  = 1;
 let _repeatTPW  = 1;
 
 // ── Schedule modal ────────────────────────────────────────────────────────────
+// ── Task context menu (mobile ⋯ button) ───────────────────────────────────────
+let _taskMenuEl = null;
+function closeTaskMenu() {
+  if (_taskMenuEl) { _taskMenuEl.remove(); _taskMenuEl = null; }
+  document.removeEventListener('pointerdown', _taskMenuOutside);
+}
+function _taskMenuOutside(e) {
+  if (_taskMenuEl && !_taskMenuEl.contains(e.target)) closeTaskMenu();
+}
+function openTaskMenu(task, anchorEl) {
+  closeTaskMenu();
+  const menu = document.createElement('div');
+  menu.className = 'task-ctx-menu';
+  _taskMenuEl = menu;
+
+  const items = [];
+  if (!task.isHeader) {
+    items.push({ label: task.sched?.t ? 'Edit schedule' : 'Set time', fn: () => openSchedModal(task) });
+    items.push({ label: task.notes ? 'Edit notes' : 'Add notes', fn: () => openNotesModal(task, () => rerender()) });
+    items.push({ label: task.repeat ? 'Edit repeat' : 'Set repeat', fn: () => openRepeatModal(task) });
+    if (task.sched?.t) items.push({ label: 'Remove time', fn: () => unscheduleTask(task) });
+  }
+  items.push({ label: 'Delete', fn: () => {
+    const sub = getSubtree(task);
+    tasks = tasks.filter(t => !sub.includes(t));
+    saveToStorage(); rerender();
+  }, danger: true });
+
+  items.forEach(({ label, fn, danger }) => {
+    const btn = document.createElement('button');
+    btn.className = 'task-ctx-item' + (danger ? ' ctx-danger' : '');
+    btn.textContent = label;
+    btn.addEventListener('pointerdown', e => { e.stopPropagation(); closeTaskMenu(); fn(); });
+    menu.appendChild(btn);
+  });
+
+  document.body.appendChild(menu);
+
+  // Position below anchor, right-aligned, clamped to viewport
+  const r = anchorEl.getBoundingClientRect();
+  const mW = 172;
+  let left = r.right - mW;
+  if (left < 6) left = 6;
+  let top = r.bottom + 6;
+  if (top + 280 > window.innerHeight) top = r.top - Math.min(280, top + 280 - window.innerHeight) - 6;
+  menu.style.left = left + 'px';
+  menu.style.top  = top + 'px';
+
+  setTimeout(() => document.addEventListener('pointerdown', _taskMenuOutside), 50);
+}
+
 let _schedTask = null;
 
 function openSchedModal(task) {
@@ -4989,7 +5065,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
     e.preventDefault(); goNextDay();
   }
-  if (e.key === 'Escape') { closeAddModal(); closeNotesModal(false); closeRepeatModal(); closeSchedModal(); closeDatePanel(); closeSettings(); if (folderDrawerOpen) toggleFolderDrawer(false); }
+  if (e.key === 'Escape') { closeAddModal(); closeNotesModal(false); closeRepeatModal(); closeSchedModal(); closeTaskMenu(); closeDatePanel(); closeSettings(); if (folderDrawerOpen) toggleFolderDrawer(false); }
   if ((e.metaKey || e.ctrlKey) && e.key === '1') { e.preventDefault(); switchTab('schedule'); }
   if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('projects'); }
   if ((e.metaKey || e.ctrlKey) && e.key === '3') { e.preventDefault(); switchTab('horizons'); }
