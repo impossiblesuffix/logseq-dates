@@ -303,11 +303,11 @@ body {
 
 /* ── Timeline panel ──────────────────────────────────────────────── */
 .tl-panel {
-  width: 76px;
+  width: 58px;
   flex-shrink: 0;
   background: transparent;
-  border-right: none;
   position: relative;
+  order: 2;
 }
 .tl-zoom-btns {
   position: absolute; bottom: 60px; left: 0; right: 0;
@@ -330,39 +330,39 @@ body.dark .tl-zoom-btns .tl-zoom-btn { background: #222228; border-color: #33334
 body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0; }
 .tl-spine {
   position: absolute; top: 0; bottom: 0;
-  left: 42px; width: 1px; background: #d0d0da;
+  left: 27px; width: 1px; background: #d0d0da;
 }
 @keyframes now-pulse {
   0%,100% { opacity: 1; }
   50%      { opacity: .45; }
 }
 .tl-now-dot {
-  position: absolute; left: 42px;
+  position: absolute; left: 27px;
   width: 8px; height: 8px; border-radius: 50%;
   background: #4f46e5; border: 2px solid #fafafa;
   transform: translate(-4px,-4px); z-index: 5;
   animation: now-pulse 2.4s ease-in-out infinite;
 }
 .tl-now-line {
-  position: absolute; left: 42px; right: 0;
+  position: absolute; left: 0; right: 31px;
   height: 2px; background: #4f46e5; opacity: .5; z-index: 4;
 }
 .tl-label {
-  position: absolute; left: 1px; width: 38px;
-  text-align: right;
+  position: absolute; left: 33px; width: 24px;
+  text-align: left;
   font-size: 9px; font-weight: 400; color: #888898; letter-spacing: .4px;
   transform: translateY(-50%); line-height: 1; white-space: nowrap;
 }
 .tl-tick {
-  position: absolute; left: 43px; width: 5px; height: 1px;
+  position: absolute; left: 28px; width: 4px; height: 1px;
   background: #c0c0ce; transform: translateY(-50%);
 }
 .tl-bar {
-  position: absolute; left: 47px; width: 27px;
+  position: absolute; left: 2px; width: 23px;
   border-radius: 3px; z-index: 2; cursor: grab; touch-action: none;
   transition: left .12s, width .12s, opacity .15s; opacity: .65;
 }
-.tl-bar:hover, .tl-bar.hl { left: 45px; width: 29px; opacity: .9; }
+.tl-bar:hover, .tl-bar.hl { left: 0px; width: 25px; opacity: .9; }
 .tl-bar.now-active { opacity: .88; }
 .tl-bar.next-up    { opacity: .75; }
 .tl-bar.dragging {
@@ -467,7 +467,7 @@ body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0
 
 /* ── Tick events (zero-duration / point in time) ─────────────────── */
 .tl-tick-event {
-  position: absolute; left: 47px; right: 2px;
+  position: absolute; left: 2px; right: 33px;
   height: 4px; border-radius: 2px;
   z-index: 2; cursor: grab; opacity: .75; touch-action: none;
   transition: height .1s, opacity .15s;
@@ -487,7 +487,7 @@ body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0
 
 
 /* ── Task panel ──────────────────────────────────────────────────── */
-.task-panel { flex: 1; min-width: 0; overflow-x: hidden; background: transparent; padding: 0; position: relative; display: flex; flex-direction: column; }
+.task-panel { flex: 1; min-width: 0; overflow-x: hidden; background: transparent; padding: 0; position: relative; display: flex; flex-direction: column; order: 1; }
 .tasklist { position: relative; flex: 1; padding-top: 4px; min-width: 0; }
 
 /* ── Task rows ───────────────────────────────────────────────────── */
@@ -568,10 +568,10 @@ body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0
 .time-badge-wrap:hover .time-badge-x { opacity: .75; }
 
 /* ── Timeline bar lane stacking (for overlapping bars) ───────────── */
-.tl-bar[data-lane="1"] { left: 55px; width: 18px; }
-.tl-bar[data-lane="2"] { left: 63px; width: 11px; }
-.tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 53px; width: 20px; }
-.tl-bar[data-lane="2"]:hover, .tl-bar[data-lane="2"].hl { left: 61px; width: 13px; }
+.tl-bar[data-lane="1"] { left: 4px; width: 17px; }
+.tl-bar[data-lane="2"] { left: 6px; width: 13px; }
+.tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 2px; width: 19px; }
+.tl-bar[data-lane="2"]:hover, .tl-bar[data-lane="2"].hl { left: 4px; width: 15px; }
 
 /* ── SVG connections ─────────────────────────────────────────────── */
 .connections {
@@ -1427,17 +1427,18 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
   .tl-zoom-btns  { display: flex !important; }
 
   /* ── Compact timeline: narrower panel frees space for tasks ── */
-  .tl-panel { width: 56px; }
-  .tl-label { left: 1px; width: 28px;
+  .tl-panel { width: 50px; }
+  .tl-label { left: 25px; width: 24px; text-align: left;
     font-size: 10px; color: #686878; font-weight: 500; }
-  .tl-spine, .tl-now-dot, .tl-now-line { left: 31px; }
-  .tl-tick  { left: 32px; width: 4px; }
-  .tl-bar   { left: 36px; width: 22px; }
-  .tl-bar:hover, .tl-bar.hl { left: 34px; width: 24px; }
-  .tl-bar[data-lane="1"] { left: 48px; width: 14px; }
-  .tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 46px; width: 16px; }
-  .tl-bar[data-lane="2"] { left: 52px; width: 10px; }
-  .tl-tick-event { left: 36px; }
+  .tl-spine, .tl-now-dot { left: 20px; }
+  .tl-now-line { left: 0; right: 30px; }
+  .tl-tick  { left: 21px; width: 3px; }
+  .tl-bar   { left: 2px; width: 16px; }
+  .tl-bar:hover, .tl-bar.hl { left: 0px; width: 18px; }
+  .tl-bar[data-lane="1"] { left: 3px; width: 12px; }
+  .tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 1px; width: 14px; }
+  .tl-bar[data-lane="2"] { left: 4px; width: 9px; }
+  .tl-tick-event { left: 2px; right: 32px; }
 
   /* ── Bigger tap targets for nav / view toggle ── */
   .view-toggle-btn { font-size: 12px; padding: 5px 10px; }
@@ -2790,13 +2791,13 @@ function drawConnections() {
     if (!bar||!pill) continue;
     const bR=bar.getBoundingClientRect(), pR=pill.getBoundingClientRect();
     const isTick=bar.classList.contains('tl-tick-event');
-    const x1=bR.right-rR.left, y1=bR.top-rR.top+bR.height*(isTick?0.5:0.28);
-    const x2=pR.left-rR.left,  y2=pR.top-rR.top+pR.height*.5;
+    const x1=pR.right-rR.left, y1=pR.top-rR.top+pR.height*.5;
+    const x2=bR.left-rR.left,  y2=bR.top-rR.top+bR.height*(isTick?0.5:0.28);
     const span=x2-x1;
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('class','conn'); path.dataset.id=task.id;
     path.setAttribute('stroke',task.color||'#9898b4');
-    path.setAttribute('d',`M${x1} ${y1} C${x1+span*.55} ${y1},${x1+span*.45} ${y2},${x2} ${y2}`);
+    path.setAttribute('d',`M${x1} ${y1} C${x1+span*.45} ${y1},${x2-span*.45} ${y2},${x2} ${y2}`);
     svg.appendChild(path);
   }
 }
