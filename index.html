@@ -301,6 +301,25 @@ body {
   border-right: none;
   position: relative;
 }
+.tl-zoom-btns {
+  position: absolute; bottom: 60px; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  z-index: 10; pointer-events: none;
+}
+.tl-zoom-btns .tl-zoom-btn {
+  pointer-events: auto;
+  width: 22px; height: 22px; border-radius: 5px;
+  border: 1px solid #e0e0ea; background: #fff;
+  font-size: 15px; line-height: 1; color: #8080a0;
+  cursor: pointer; display: grid; place-items: center;
+  touch-action: manipulation;
+  transition: background .1s, color .1s;
+  user-select: none; flex-shrink: 0; font-family: inherit;
+}
+.tl-zoom-btns .tl-zoom-btn:hover { background: #f0f0f8; color: #4f46e5; border-color: #c8c8e0; }
+.tl-zoom-btns .tl-zoom-btn:active { background: #e8e8f4; }
+body.dark .tl-zoom-btns .tl-zoom-btn { background: #222228; border-color: #333340; color: #6060a0; }
+body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0; }
 .tl-spine {
   position: absolute; top: 0; bottom: 0;
   left: 42px; width: 1px; background: #d0d0da;
@@ -460,13 +479,14 @@ body {
 
 
 /* ── Task panel ──────────────────────────────────────────────────── */
-.task-panel { flex: 1; background: transparent; padding: 0; position: relative; display: flex; flex-direction: column; }
-.tasklist { position: relative; flex: 1; padding-top: 4px; }
+.task-panel { flex: 1; min-width: 0; overflow-x: hidden; background: transparent; padding: 0; position: relative; display: flex; flex-direction: column; }
+.tasklist { position: relative; flex: 1; padding-top: 4px; min-width: 0; }
 
 /* ── Task rows ───────────────────────────────────────────────────── */
 .task-row {
   display: flex; align-items: center; gap: 3px;
   padding: 1px 8px 1px 0; position: relative;
+  min-width: 0; max-width: 100%;
 }
 .drag-handle {
   flex-shrink: 0; width: 13px; height: 26px; cursor: grab;
@@ -1663,7 +1683,13 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
   <div class="outer" id="outer">
 
     <div class="card-body" id="card-body">
-      <div class="tl-panel" id="tl-panel"><div class="tl-spine"></div></div>
+      <div class="tl-panel" id="tl-panel">
+        <div class="tl-zoom-btns">
+          <button id="btn-zoom-in"  class="tl-zoom-btn" title="Zoom in">+</button>
+          <button id="btn-zoom-out" class="tl-zoom-btn" title="Zoom out">−</button>
+        </div>
+        <div class="tl-spine"></div>
+      </div>
       <div class="task-panel" id="task-panel">
         <div id="schedule-panel">
           <div class="sort-bar" id="sort-bar">
@@ -3344,22 +3370,30 @@ function onDragUp(e) {
     // ── Dropped on timeline → pin start time, then drag to set duration ─────
     if (!task.color) task.color='#9898b4';
     const schedDate = viewDate && viewDate !== todayStr() ? viewDate : (task.sched?.date ?? null);
-    task.sched={ t:tlDropTime, m:0, ...(schedDate ? {date:schedDate} : {}) };
-    const dropClientY = e.clientY;       // capture before drag state is cleared
+    task.sched={ t:tlDropTime, m:30, ...(schedDate ? {date:schedDate} : {}) };
+    const dropClientY = e.clientY;
+    const isTouch = e.pointerType === 'touch';
     $$('.task-row').forEach(r=>r.style.opacity='');
     drag=null;
     document.removeEventListener('pointermove',onDragMove);
     document.removeEventListener('pointerup',onDragUp);
-    // Render the tick, then immediately start a bottom-resize from the drop point
-    renderTasks();
-    requestAnimationFrame(()=>{
-      renderTimeline(); syncDatePanelHeight();
+    if (isTouch) {
+      // On touch: can't drag-resize after drop; open schedule modal instead
+      saveToStorage(); rerender();
+      requestAnimationFrame(() => openSchedModal(task));
+    } else {
+      // Desktop: render tick then immediately start bottom-resize drag
+      task.sched.m = 0;
+      renderTasks();
       requestAnimationFrame(()=>{
-        drawConnections();
-        const newEl = $(`.tl-tick-event[data-id="${task.id}"]`) || $(`.tl-bar[data-id="${task.id}"]`);
-        if (newEl) startBottomResize(newEl, task, dropClientY, 0);
+        renderTimeline(); syncDatePanelHeight();
+        requestAnimationFrame(()=>{
+          drawConnections();
+          const newEl = $(`.tl-tick-event[data-id="${task.id}"]`) || $(`.tl-bar[data-id="${task.id}"]`);
+          if (newEl) startBottomResize(newEl, task, dropClientY, 0);
+        });
       });
-    });
+    }
     return; // skip the shared cleanup below
 
   } else if (dropDate) {
@@ -3609,7 +3643,7 @@ function populateTimeSelects() {
 $('#btn-add')?.addEventListener('click', addTask);
 $('#btn-add-group')?.addEventListener('click', addHeader);
 $('#fab-add').addEventListener('click', () => {
-  if (currentTab === 'schedule') { addTask(); }
+  if (currentTab === 'schedule') { openAddModal(); }
   else if (currentTab === 'projects') { $('#btn-new-project')?.click(); }
   else if (currentTab === 'horizons') { $$('.btn-add-horizon').at(-1)?.click(); }
   else if (currentTab === 'repeaters') { $$('.btn-add-repeater').at(-1)?.click(); }
