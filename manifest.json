@@ -2,7 +2,7 @@
   "name": "Habit Watcher",
   "short_name": "Habit Watcher",
   "description": "Task timeline and habit planner",
-  "start_url": "./task-timeline-prototype.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f5f7",
