@@ -1398,20 +1398,37 @@ body.tab-repeaters #btn-add-group { display: none; }
 #fab-add:active { transform: scale(.93); }
 body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
 
-/* ── Mobile: show key pill buttons on touch devices ─────────────── */
+/* ── Mobile layout ───────────────────────────────────────────────── */
 @media (hover: none) {
-  /* Reveal tap-accessible buttons */
-  .task-row .task-del,
-  .task-row .header-del,
-  .task-row .notes-btn,
-  .task-row .sched-btn,
-  .task-row .drag-handle { opacity: 1 !important; }
+  /* Two-row pill: text on row 1, indicators + actions on row 2.
+     ::after is a zero-height flex item that forces a line break. */
+  .pill { flex-wrap: wrap; align-items: center; }
+  .pill::after {
+    content: ''; flex-basis: 100%; height: 0;
+    order: 1; /* sits between row-1 items (order 0) and row-2 items (order 2) */
+  }
 
-  /* Hide hover-only clutter that eats text space on mobile */
+  /* Row 1 */
+  .pill-chk, .pill-event-icon, .collapse-btn { order: 0; flex-shrink: 0; }
+  .pill-text { order: 0; flex: 1; min-width: 0; }
+
+  /* Row 2: indicators and actions */
+  .time-badge-wrap, .sched-btn, .repeat-badge,
+  .notes-btn, .task-del { order: 2; flex-shrink: 0; margin-top: 3px; }
+  .task-del { margin-left: auto; } /* push × to far right on row 2 */
+
+  /* Hide hover-only clutter entirely (saves space and reduces noise) */
   .task-row .evt-toggle,
   .task-row .move-btn,
   .task-row .repeat-btn,
-  .task-row .date-btn:not(.has-date) { display: none !important; }
+  .task-row .date-btn:not(.has-date),
+  .task-row .drag-handle { display: none !important; }
+
+  /* Reveal tap-accessible action buttons */
+  .task-row .task-del,
+  .task-row .header-del,
+  .task-row .notes-btn,
+  .task-row .sched-btn { opacity: 1 !important; }
 
   /* Show zoom buttons only on touch */
   .tl-zoom-btns { display: flex; }
