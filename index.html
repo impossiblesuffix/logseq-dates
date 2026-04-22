@@ -515,6 +515,7 @@ body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0
   border-radius: 7px; border: 1px solid #e8e8ed;
   background: #f8f8fb; min-width: 0;
   transition: background .12s, border-color .12s;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .pill:hover { background: #f0f0f5; border-color: #d8d8e4; }
 .pill.hl    { background: #ececf3; border-color: #d4d4e0; }
@@ -1411,8 +1412,8 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
 
 /* ── Mobile layout ───────────────────────────────────────────────── */
 @media (hover: none) {
-  /* Hide drag handles — tasks push to left edge, actions via ⋯ menu */
-  .drag-handle { display: none !important; }
+  /* Minimal drag handle — narrow so tasks stay near-left */
+  .drag-handle { width: 10px; opacity: 0.3 !important; }
 
   /* Hide all inline action buttons — accessed via ⋯ menu instead */
   .task-row .evt-toggle,
