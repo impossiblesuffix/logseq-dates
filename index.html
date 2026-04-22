@@ -3418,9 +3418,13 @@ function saveToStorage() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e) {}
   clearTimeout(_sbSaveTimer);
   _sbSaveTimer = setTimeout(async () => {
-    const { data: { user } } = await _sb.auth.getUser();
-    if (!user) return;
-    await _sb.from('user_data').upsert({ id: user.id, data: payload });
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) return;
+    const { error } = await _sb.from('user_data').upsert(
+      { id: session.user.id, data: payload },
+      { onConflict: 'id' }
+    );
+    if (error) console.error('Supabase save failed:', error);
   }, 1500);
 }
 
