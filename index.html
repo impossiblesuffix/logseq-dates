@@ -1400,12 +1400,25 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
 
 /* ── Mobile: show key pill buttons on touch devices ─────────────── */
 @media (hover: none) {
+  /* Reveal tap-accessible buttons */
   .task-row .task-del,
   .task-row .header-del,
   .task-row .notes-btn,
   .task-row .sched-btn,
   .task-row .drag-handle { opacity: 1 !important; }
+
+  /* Hide hover-only clutter that eats text space on mobile */
+  .task-row .evt-toggle,
+  .task-row .move-btn,
+  .task-row .repeat-btn,
+  .task-row .date-btn:not(.has-date) { display: none !important; }
+
+  /* Show zoom buttons only on touch */
+  .tl-zoom-btns { display: flex; }
 }
+
+/* Hide zoom buttons on desktop (shown only on touch via above rule) */
+.tl-zoom-btns { display: none; }
 
 /* ── Schedule button (clock icon on unscheduled tasks) ───────────── */
 .sched-btn {
