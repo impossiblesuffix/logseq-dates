@@ -1425,7 +1425,40 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
   /* Show ⋯ menu button and zoom buttons */
   .task-menu-btn { display: flex !important; }
   .tl-zoom-btns  { display: flex !important; }
+
+  /* ── Compact timeline: narrower panel frees space for tasks ── */
+  .tl-panel { width: 56px; }
+  .tl-label { left: 1px; width: 28px;
+    font-size: 10px; color: #686878; font-weight: 500; }
+  .tl-spine, .tl-now-dot, .tl-now-line { left: 31px; }
+  .tl-tick  { left: 32px; width: 4px; }
+  .tl-bar   { left: 36px; width: 22px; }
+  .tl-bar:hover, .tl-bar.hl { left: 34px; width: 24px; }
+  .tl-bar[data-lane="1"] { left: 48px; width: 14px; }
+  .tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 46px; width: 16px; }
+  .tl-bar[data-lane="2"] { left: 52px; width: 10px; }
+  .tl-tick-event { left: 36px; }
+
+  /* ── Bigger tap targets for nav / view toggle ── */
+  .view-toggle-btn { font-size: 12px; padding: 5px 10px; }
+  .btn-icon, .btn-settings, .btn-overflow { font-size: 20px; }
+
+  /* ── Slightly larger group headers ── */
+  .task-row.is-header .pill-text { font-size: 11px !important; }
+
+  /* ── Show text-size setting only on mobile ── */
+  #settings-text-size { display: flex !important; }
 }
+
+/* ── Large text mode (toggled via settings) ──────────────────────── */
+body.ui-large .tl-label      { font-size: 12px !important; color: #585868 !important; }
+body.ui-large .view-toggle-btn { font-size: 14px !important; }
+body.ui-large .pill-text     { font-size: 14px !important; }
+body.ui-large .task-row.is-header .pill-text { font-size: 12.5px !important; }
+body.ui-large .time-badge    { font-size: 11px !important; }
+body.ui-large .btn-icon, body.ui-large .btn-settings,
+body.ui-large .btn-overflow  { font-size: 22px !important; }
+#settings-text-size { display: none; } /* hidden on desktop */
 
 /* ── Task context menu button (hidden on desktop) ────────────────── */
 .task-menu-btn {
@@ -1849,6 +1882,13 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
     <span class="settings-item-label">Hide completed tasks</span>
     <label class="toggle-sw">
       <input type="checkbox" id="toggle-hide-done" checked />
+      <span class="toggle-track"></span>
+    </label>
+  </div>
+  <div class="settings-item" id="settings-text-size">
+    <span class="settings-item-label">Large text</span>
+    <label class="toggle-sw">
+      <input type="checkbox" id="toggle-ui-large">
       <span class="toggle-track"></span>
     </label>
   </div>
@@ -3750,6 +3790,10 @@ function setHideCompleted(on) {
   saveToStorage(); rerender();
 }
 $('#toggle-hide-done').addEventListener('change', e => setHideCompleted(e.target.checked));
+$('#toggle-ui-large').addEventListener('change', e => {
+  document.body.classList.toggle('ui-large', e.target.checked);
+  localStorage.setItem('habit-watcher-ui-large', e.target.checked ? '1' : '0');
+});
 $('#btn-hide-done')?.addEventListener('click', () => {
   setHideCompleted(!hideCompleted);
 });
@@ -5140,6 +5184,9 @@ async function startApp() {
   await loadFromSupabase();
   $('#auth-screen').style.display = 'none';
   $('#toggle-hide-done').checked = hideCompleted;
+  const uiLarge = localStorage.getItem('habit-watcher-ui-large') === '1';
+  document.body.classList.toggle('ui-large', uiLarge);
+  $('#toggle-ui-large').checked = uiLarge;
   if (horizons.length === 0) horizons = initDefaultHorizons();
   populateTimeSelects();
   buildDatePanel();
