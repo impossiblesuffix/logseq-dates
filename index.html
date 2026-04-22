@@ -207,7 +207,8 @@ body {
 /* ── Card body ───────────────────────────────────────────────────── */
 .card-body {
   display: flex; flex: 1; min-height: 0; position: relative;
-  overflow-y: auto;
+  overflow-y: auto; overflow-x: hidden;
+  touch-action: pan-y; overscroll-behavior: none;
   padding-top: 16px;
   scrollbar-width: none;
 }
@@ -495,6 +496,7 @@ body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0
   display: flex; align-items: center; gap: 3px;
   padding: 1px 8px 1px 0; position: relative;
   min-width: 0; max-width: 100%;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .drag-handle {
   flex-shrink: 0; width: 13px; height: 26px; cursor: grab;
@@ -548,6 +550,7 @@ body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0
   color: #18181b; outline: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   min-width: 0; cursor: text; -webkit-user-modify: read-write-plaintext-only;
+  user-select: text; -webkit-user-select: text;
 }
 .pill-text:focus { overflow: visible; white-space: normal; }
 
@@ -1408,8 +1411,8 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
 
 /* ── Mobile layout ───────────────────────────────────────────────── */
 @media (hover: none) {
-  /* Restore drag handle so reordering still works */
-  .task-row .drag-handle { opacity: 1 !important; }
+  /* Hide drag handles — tasks push to left edge, actions via ⋯ menu */
+  .drag-handle { display: none !important; }
 
   /* Hide all inline action buttons — accessed via ⋯ menu instead */
   .task-row .evt-toggle,
