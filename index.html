@@ -1426,19 +1426,19 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
   .task-menu-btn { display: flex !important; }
   .tl-zoom-btns  { display: flex !important; }
 
-  /* ── Compact timeline: narrower panel frees space for tasks ── */
-  .tl-panel { width: 50px; }
-  .tl-label { left: 25px; width: 24px; text-align: left;
+  /* ── Compact timeline: minimal strip + 24hr labels ── */
+  .tl-panel { width: 40px; }
+  .tl-label { left: 14px; width: 25px; text-align: left;
     font-size: 10px; color: #686878; font-weight: 500; }
-  .tl-spine, .tl-now-dot { left: 20px; }
+  .tl-spine, .tl-now-dot { left: 10px; }
   .tl-now-line { left: 0; right: 30px; }
-  .tl-tick  { left: 21px; width: 3px; }
-  .tl-bar   { left: 2px; width: 16px; }
-  .tl-bar:hover, .tl-bar.hl { left: 0px; width: 18px; }
-  .tl-bar[data-lane="1"] { left: 3px; width: 12px; }
-  .tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 1px; width: 14px; }
-  .tl-bar[data-lane="2"] { left: 4px; width: 9px; }
-  .tl-tick-event { left: 2px; right: 32px; }
+  .tl-tick  { left: 11px; width: 3px; }
+  .tl-bar   { left: 0px; width: 8px; opacity: .8; }
+  .tl-bar:hover, .tl-bar.hl { left: 0px; width: 10px; opacity: 1; }
+  .tl-bar[data-lane="1"] { left: 0px; width: 6px; }
+  .tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 0px; width: 8px; }
+  .tl-bar[data-lane="2"] { left: 0px; width: 4px; }
+  .tl-tick-event { left: 0px; right: 30px; }
 
   /* ── Bigger tap targets for nav / view toggle ── */
   .view-toggle-btn { font-size: 12px; padding: 5px 10px; }
@@ -2417,7 +2417,7 @@ function renderTimeline() {
     const hh=mins/60, lbl=document.createElement('div');
     lbl.className='tl-label'; lbl.style.top=y+'px';
     if (y < 6) lbl.style.transform = 'translateY(2px)';
-    lbl.textContent=hh<12?hh+'am':hh===12?'12pm':(hh-12)+'pm';
+    lbl.textContent=String(hh);
     panel.appendChild(lbl);
   }
 
