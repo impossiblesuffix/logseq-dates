@@ -430,6 +430,7 @@ body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0
   border-radius: 4px; position: relative; overflow: hidden; pointer-events: none;
 }
 .tl-bar-time {
+  display: none;
   position: absolute; top: 3px; left: 0; right: 0;
   text-align: center; font-size: 7.5px; font-weight: 700; font-family: inherit;
   color: rgba(255,255,255,.8); line-height: 1;
@@ -2721,7 +2722,7 @@ function renderTasks() {
         badge.className='time-badge'; badge.textContent=task.sched.t;
         badge.style.cssText=`background:rgba(${hexRgb(c)},.1);color:${c};cursor:pointer;`;
         badge.title=minsStr(task.sched.m);
-        badge.addEventListener('click', e=>{ e.stopPropagation(); openSchedModal(task); });
+        badge.addEventListener('pointerdown', e=>{ e.stopPropagation(); openSchedModal(task); });
         const bx=document.createElement('i'); bx.className='time-badge-x'; bx.textContent='×';
         bx.addEventListener('click', e=>{ e.stopPropagation(); unscheduleTask(task); });
         wrap.append(badge, bx);
