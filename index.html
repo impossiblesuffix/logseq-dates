@@ -4860,7 +4860,7 @@ function renderHorizons() {
     nameEl.className = 'horizon-name-edit'; nameEl.contentEditable = 'true';
     nameEl.spellcheck = false; nameEl.textContent = h.name;
     nameEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); } });
-    nameEl.addEventListener('blur', () => { 
+    nameEl.addEventListener('blur', () => {
       const v = nameEl.textContent.trim(); if (v) { h.name = v; saveToStorage(); }
     });
     // Delete button
