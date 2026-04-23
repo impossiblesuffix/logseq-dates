@@ -1375,6 +1375,26 @@ body.tab-repeaters #btn-add-group { display: none; }
 }
 .settings-item-label { font-size: 12.5px; font-weight: 500; color: #3f3f46; }
 .settings-divider { height: 1px; background: #f0f0f4; margin: 4px 0; }
+.settings-action-row { display: flex; gap: 6px; padding: 4px 14px 6px; }
+.settings-action-btn {
+  flex: 1; border: 1px solid #e4e4e7; border-radius: 6px; background: transparent;
+  font-family: inherit; font-size: 11.5px; font-weight: 600; color: #52525b;
+  padding: 6px 4px; cursor: pointer; transition: background .1s, color .1s;
+}
+.settings-action-btn:hover { background: #f4f4f8; color: #4f46e5; border-color: #c4c4e4; }
+.backup-list { padding: 0 0 4px; }
+.backup-entry {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 14px; gap: 8px;
+}
+.backup-entry-time { font-size: 11px; color: #8080a0; font-weight: 500; line-height: 1.35; }
+.backup-restore-btn {
+  flex-shrink: 0; font-size: 11px; font-weight: 700; color: #4f46e5; border: none;
+  background: transparent; cursor: pointer; padding: 3px 7px;
+  border-radius: 4px; font-family: inherit; transition: background .1s;
+}
+.backup-restore-btn:hover { background: rgba(79,70,229,.1); }
+.backup-empty { padding: 6px 14px; font-size: 11.5px; color: #a0a0b0; }
 /* Toggle switch */
 .toggle-sw {
   position: relative; width: 32px; height: 18px; flex-shrink: 0;
@@ -1676,6 +1696,10 @@ body.dark .overflow-item { color: #b8b8c8; }
 body.dark .overflow-item:hover { background: #252532; color: #e0e0e8; }
 body.dark .overflow-item.btn-hide-done.active { background: #20203a; color: #7c79f0 !important; }
 body.dark .settings-item-label { color: #c0c0d0; }
+body.dark .settings-action-btn { border-color: #2c2c3c; color: #9090a8; }
+body.dark .settings-action-btn:hover { background: #252532; color: #9090f0; border-color: #3c3c5c; }
+body.dark .backup-entry-time { color: #5a5a72; }
+body.dark .backup-restore-btn { color: #7c79f0; }
 body.dark .toggle-track { background: #363648; }
 /* date panel */
 body.dark .date-panel { background: #1d1d24; box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06); }
@@ -1957,6 +1981,17 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
     <span class="settings-item-label" style="font-size:11px;color:#a0a0b0">⌘E export · ⌘I import</span>
     <span class="settings-item-label" style="font-size:11px;color:#a0a0b0">W week · N new task · D date</span>
   </div>
+  <div class="settings-divider"></div>
+  <div class="settings-action-row">
+    <button class="settings-action-btn" id="btn-export">Export</button>
+    <button class="settings-action-btn" id="btn-import">Import</button>
+  </div>
+  <div class="settings-item" style="padding-top:2px;padding-bottom:2px">
+    <span class="settings-item-label">Backups</span>
+    <button class="backup-restore-btn" id="btn-backup-toggle" style="font-size:11.5px">Show ›</button>
+  </div>
+  <div class="backup-list" id="backup-list" style="display:none"></div>
+  <div class="settings-divider"></div>
   <button class="btn-signout" id="btn-signout">Sign out</button>
 </div>
 
@@ -3710,6 +3745,8 @@ function dpNavYear(delta) {
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'habit-watcher-v1';
+const BACKUP_KEY  = 'hw-backups-v1';
+const MAX_BACKUPS = 5;
 
 let _sbSaveTimer = null;
 let _lastSavedAt = 0;   // timestamp of last successful Supabase write (or load)
@@ -3732,6 +3769,56 @@ function saveToStorage() {
     if (error) console.error('Supabase save failed:', error);
     else _lastSavedAt = now;
   }, 1500);
+}
+
+function saveBackupSnapshot() {
+  if (!_dataLoaded) return;
+  try {
+    const backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]');
+    const now = Date.now();
+    // Rate-limit: at most one snapshot per hour
+    if (backups.length > 0 && now - backups[0].ts < 3600000) return;
+    backups.unshift({ ts: now, tasks, uid, projects, pUid, horizons, hUid, folders, fUid, hideCompleted, tlStart, tlEnd });
+    if (backups.length > MAX_BACKUPS) backups.length = MAX_BACKUPS;
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(backups));
+  } catch(e) {}
+}
+
+function renderBackupList() {
+  const list = $('#backup-list');
+  if (!list) return;
+  try {
+    const backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]');
+    if (backups.length === 0) {
+      list.innerHTML = '<div class="backup-empty">No backups yet — one is saved each hour while using the app</div>';
+      return;
+    }
+    list.innerHTML = backups.map((b, i) => {
+      const d = new Date(b.ts);
+      const label = d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+      const cnt = (b.tasks || []).filter(t => !t.isHeader).length;
+      return `<div class="backup-entry">
+        <span class="backup-entry-time">${label}<br>${cnt} task${cnt!==1?'s':''}</span>
+        <button class="backup-restore-btn" onclick="restoreBackup(${i})">Restore</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="backup-empty">Could not read backups</div>';
+  }
+}
+
+function restoreBackup(idx) {
+  try {
+    const backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]');
+    const b = backups[idx];
+    if (!b) return;
+    const d = new Date(b.ts).toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    if (!confirm(`Restore backup from ${d}?\n\nThis will replace your current data.`)) return;
+    applyStorageData(b);
+    saveToStorage();
+    rerender();
+    closeSettings();
+  } catch(e) { alert('Could not restore backup.'); }
 }
 
 function setupRealtime(userId) {
@@ -3773,6 +3860,7 @@ function applyStorageData(data) {
     horizons = Object.entries(data.horizons).map(([name, text]) => ({ id: i++, name, text }));
     hUid = Math.max(hUid, i);
   }
+  saveBackupSnapshot();
 }
 
 function loadFromStorage() {
@@ -3852,6 +3940,15 @@ function doExport() {
   a.download = `tasks-${todayStr()}.json`; a.click(); URL.revokeObjectURL(a.href);
 }
 $('#btn-export')?.addEventListener('click', doExport);
+$('#btn-import')?.addEventListener('click', () => { closeSettings(); $('#import-file-input').click(); });
+$('#btn-backup-toggle')?.addEventListener('click', () => {
+  const list = $('#backup-list'), btn = $('#btn-backup-toggle');
+  if (list.style.display === 'none') {
+    renderBackupList(); list.style.display = ''; btn.textContent = 'Hide ↑';
+  } else {
+    list.style.display = 'none'; btn.textContent = 'Show ›';
+  }
+});
 
 $('#import-file-input').addEventListener('change', e => {
   const file = e.target.files[0]; if (!file) return;
