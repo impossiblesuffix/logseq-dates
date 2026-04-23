@@ -311,24 +311,20 @@ body {
   order: 2;
 }
 .tl-zoom-btns {
-  position: absolute; top: 8px; left: 0; right: 0;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  z-index: 10; pointer-events: none;
+  display: none; /* shown only on mobile via media query */
+  align-items: center; gap: 3px; flex-shrink: 0;
+  border: 1px solid #e8e8ed; border-radius: 6px; overflow: hidden; margin-left: 4px;
 }
-.tl-zoom-btns .tl-zoom-btn {
-  pointer-events: auto;
-  width: 22px; height: 22px; border-radius: 5px;
-  border: 1px solid #e0e0ea; background: #fff;
-  font-size: 15px; line-height: 1; color: #8080a0;
-  cursor: pointer; display: grid; place-items: center;
-  touch-action: manipulation;
-  transition: background .1s, color .1s;
-  user-select: none; flex-shrink: 0; font-family: inherit;
+.tl-zoom-btn {
+  border: none; background: transparent; padding: 4px 9px;
+  font-size: 14px; font-weight: 600; color: #8080a0; line-height: 1;
+  cursor: pointer; touch-action: manipulation; font-family: inherit;
+  transition: background .1s, color .1s; user-select: none;
 }
-.tl-zoom-btns .tl-zoom-btn:hover { background: #f0f0f8; color: #4f46e5; border-color: #c8c8e0; }
-.tl-zoom-btns .tl-zoom-btn:active { background: #e8e8f4; }
-body.dark .tl-zoom-btns .tl-zoom-btn { background: #222228; border-color: #333340; color: #6060a0; }
-body.dark .tl-zoom-btns .tl-zoom-btn:hover { background: #2a2a38; color: #8080d0; }
+.tl-zoom-btn:hover { background: rgba(0,0,0,.05); color: #4f46e5; }
+.tl-zoom-btn:active { background: rgba(79,70,229,.1); color: #4f46e5; }
+body.dark .tl-zoom-btn { color: #6060a0; }
+body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0; }
 .tl-spine {
   position: absolute; top: 0; bottom: 0;
   left: 27px; width: 1px; background: #d0d0da;
@@ -1776,16 +1772,16 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
       <button class="view-toggle-btn active" id="btn-view-day" title="Day view">D</button>
       <button class="view-toggle-btn" id="btn-view-week" title="Week view">W</button>
     </div>
+    <div class="tl-zoom-btns">
+      <button id="btn-zoom-in"  class="tl-zoom-btn" title="Zoom in">+</button>
+      <button id="btn-zoom-out" class="tl-zoom-btn" title="Zoom out">−</button>
+    </div>
   </nav>
 
   <div class="outer" id="outer">
 
     <div class="card-body" id="card-body">
       <div class="tl-panel" id="tl-panel">
-        <div class="tl-zoom-btns">
-          <button id="btn-zoom-in"  class="tl-zoom-btn" title="Zoom in">+</button>
-          <button id="btn-zoom-out" class="tl-zoom-btn" title="Zoom out">−</button>
-        </div>
         <div class="tl-spine"></div>
       </div>
       <div class="task-panel" id="task-panel">
