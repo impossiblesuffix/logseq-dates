@@ -1748,7 +1748,7 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
 </head>
 <body>
 
-<div id="auth-screen">
+<div id="auth-screen" style="display:none">
   <div id="auth-card">
     <div id="auth-title">Habit Watcher</div>
     <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
@@ -5262,7 +5262,7 @@ $('#btn-signout').addEventListener('click', async () => {
 (async () => {
   const { data: { session } } = await _sb.auth.getSession();
   if (session) { await startApp(); }
-  // else: auth screen stays visible, user must sign in
+  else { $('#auth-screen').style.display = 'flex'; }
 })();
 
 // ── Service worker registration ───────────────────────────────────────────────
