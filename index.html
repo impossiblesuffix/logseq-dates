@@ -1451,11 +1451,10 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
 }
 
 /* ── Text size: Medium ───────────────────────────────────────────── */
-body.ui-size-md #header-h1                     { font-size: 18px !important; }
-body.ui-size-md .date-nav-btn                  { font-size: 26px !important; }
-body.ui-size-md .tab-btn                       { padding: 13px 0 !important; }
-body.ui-size-md .tab-btn svg                   { width: 22px !important; height: 22px !important; }
-body.ui-size-md .btn-folder-drawer             { font-size: 20px !important; padding: 13px 16px !important; }
+body.ui-size-md #header-h1                     { font-size: 17px !important; }
+body.ui-size-md .date-nav-btn                  { font-size: 23px !important; }
+body.ui-size-md .tab-btn svg                   { width: 19px !important; height: 19px !important; }
+body.ui-size-md .btn-folder-drawer             { font-size: 18px !important; }
 body.ui-size-md .pill-text                     { font-size: 15px !important; }
 body.ui-size-md .task-row.is-header .pill-text  { font-size: 14px !important; }
 body.ui-size-md .time-badge                    { font-size: 12px !important; }
@@ -1477,11 +1476,10 @@ body.ui-size-md .btn-add-repeater, body.ui-size-md .btn-add-horizon,
 body.ui-size-md .folder-drawer-new             { font-size: 14px !important; }
 
 /* ── Text size: Large ────────────────────────────────────────────── */
-body.ui-size-lg #header-h1                     { font-size: 21px !important; }
-body.ui-size-lg .date-nav-btn                  { font-size: 30px !important; }
-body.ui-size-lg .tab-btn                       { padding: 15px 0 !important; }
-body.ui-size-lg .tab-btn svg                   { width: 26px !important; height: 26px !important; }
-body.ui-size-lg .btn-folder-drawer             { font-size: 24px !important; padding: 15px 18px !important; }
+body.ui-size-lg #header-h1                     { font-size: 19px !important; }
+body.ui-size-lg .date-nav-btn                  { font-size: 26px !important; }
+body.ui-size-lg .tab-btn svg                   { width: 22px !important; height: 22px !important; }
+body.ui-size-lg .btn-folder-drawer             { font-size: 21px !important; }
 body.ui-size-lg .pill-text                     { font-size: 17px !important; }
 body.ui-size-lg .task-row.is-header .pill-text  { font-size: 16px !important; }
 body.ui-size-lg .time-badge                    { font-size: 14px !important; }
@@ -3716,11 +3714,13 @@ const STORAGE_KEY = 'habit-watcher-v1';
 let _sbSaveTimer = null;
 let _lastSavedAt = 0;   // timestamp of last successful Supabase write (or load)
 let _realtimeChannel = null;
+let _dataLoaded = false; // true once we've confirmed data was loaded (or confirmed new user)
 
 function saveToStorage() {
   const now = Date.now();
   const payload = { tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid, folders, fUid, savedAt: now };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e) {}
+  if (!_dataLoaded) return; // don't overwrite Supabase if we couldn't confirm load
   clearTimeout(_sbSaveTimer);
   _sbSaveTimer = setTimeout(async () => {
     const { data: { session } } = await _sb.auth.getSession();
@@ -3751,6 +3751,7 @@ function setupRealtime(userId) {
 }
 
 function applyStorageData(data) {
+  _dataLoaded = true;
   if (typeof data.savedAt === 'number' && data.savedAt > _lastSavedAt) _lastSavedAt = data.savedAt;
   if (Array.isArray(data.tasks)) {
     tasks = data.tasks;
@@ -3789,10 +3790,13 @@ async function loadFromSupabase() {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data.data)); } catch(e) {}
     } else {
       loadFromStorage(); // first login — migrate from localStorage
+      _dataLoaded = true; // confirmed new user with no Supabase data — safe to save
     }
   } catch(e) {
     console.warn('Supabase load failed, falling back to localStorage', e);
     loadFromStorage();
+    // _dataLoaded left false if localStorage was also empty — prevents template data
+    // from overwriting real Supabase data that we just couldn't reach
   }
 }
 
