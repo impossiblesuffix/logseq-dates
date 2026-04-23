@@ -1275,6 +1275,95 @@ body.tab-repeaters #btn-add-group { display: none; }
 }
 .btn-add-horizon:hover { border-color: #4f46e5; color: #4f46e5; }
 
+/* ── Horizon bullet list ──────────────────────────────────────────── */
+.h-items-list { padding: 2px 0 4px; }
+.h-item-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 10px; border-radius: 6px;
+  cursor: pointer; transition: background .1s;
+}
+.h-item-row:hover { background: #f4f4f8; }
+.h-item-bullet {
+  flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%;
+  background: #d4d4dc; transition: background .1s;
+}
+.h-item-row:hover .h-item-bullet { background: #4f46e5; }
+.h-item-text {
+  flex: 1; font-size: 13px; font-weight: 500; color: #3f3f46;
+  outline: none; min-width: 0; cursor: text;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.h-item-text:focus { white-space: normal; overflow: visible; cursor: text; }
+.h-item-has-notes .h-item-bullet { background: #a5b4fc; }
+.h-item-del {
+  flex-shrink: 0; border: none; background: transparent;
+  font-size: 14px; color: #d4d4dc; cursor: pointer; padding: 0 2px;
+  opacity: 0; transition: opacity .12s, color .12s; line-height: 1;
+  font-family: inherit;
+}
+.h-item-row:hover .h-item-del { opacity: 1; }
+.h-item-del:hover { color: #ef4444; }
+.btn-add-hitem {
+  display: block; width: 100%;
+  border: none; background: transparent; font-family: inherit;
+  font-size: 12px; font-weight: 600; color: #c0c0d0;
+  padding: 4px 10px; text-align: left; cursor: pointer;
+  transition: color .1s;
+}
+.btn-add-hitem:hover { color: #4f46e5; }
+body.dark .h-item-row:hover { background: #252532; }
+body.dark .h-item-text { color: #b0b0c0; }
+body.dark .h-item-bullet { background: #38384a; }
+body.dark .h-item-has-notes .h-item-bullet { background: #4f46a0; }
+body.dark .h-item-del { color: #38384a; }
+body.dark .btn-add-hitem { color: #404050; }
+
+/* ── Horizon note sheet ───────────────────────────────────────────── */
+.hn-sheet-overlay {
+  position: fixed; inset: 0; z-index: 10100;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: flex-end;
+}
+.hn-sheet-card {
+  width: 100%; background: #fff; border-radius: 16px 16px 0 0;
+  height: 90dvh; display: flex; flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0,0,0,.15);
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.hn-sheet-card.open { transform: translateY(0); }
+.hn-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: #d4d4d8; margin: 10px auto 0; flex-shrink: 0;
+}
+.hn-sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 10px; flex-shrink: 0;
+  border-bottom: 1px solid #f0f0f4;
+}
+.hn-sheet-title {
+  font-size: 14px; font-weight: 600; color: #3f3f46;
+  flex: 1; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.hn-close-btn {
+  border: none; background: transparent; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: #4f46e5;
+  cursor: pointer; padding: 4px 0 4px 12px; flex-shrink: 0;
+}
+.hn-sheet-ta {
+  flex: 1; border: none; outline: none; resize: none;
+  font-family: inherit; font-size: 14px; line-height: 1.65;
+  color: #18181b; padding: 14px 16px;
+  background: transparent;
+}
+body.dark .hn-sheet-card { background: #1d1d24; }
+body.dark .hn-sheet-handle { background: #38384a; }
+body.dark .hn-sheet-head { border-bottom-color: #28283a; }
+body.dark .hn-sheet-title { color: #c0c0d0; }
+body.dark .hn-close-btn { color: #7c79f0; }
+body.dark .hn-sheet-ta { color: #c0c0d0; }
+
 /* ── Unscheduled task pill ────────────────────────────────────────── */
 .pill.unscheduled .pill-text { color: #c0c0cc; }
 .pill.unscheduled .pill-chk { border-color: #e0e0e8; }
@@ -2097,6 +2186,18 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
   </div>
 </div>
 
+<!-- ── Horizon note sheet ─────────────────────────────────────────────── -->
+<div id="hn-sheet" class="hn-sheet-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="hn-sheet-card" id="hn-sheet-card">
+    <div class="hn-sheet-handle"></div>
+    <div class="hn-sheet-head">
+      <span class="hn-sheet-title" id="hn-sheet-title"></span>
+      <button class="hn-close-btn" id="hn-close">Done</button>
+    </div>
+    <textarea class="hn-sheet-ta" id="hn-sheet-ta" placeholder="Write your thoughts…"></textarea>
+  </div>
+</div>
+
 <!-- ── Notes modal ───────────────────────────────────────────────────── -->
 <div id="notes-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
   <div class="modal-card notes-modal-card">
@@ -2221,9 +2322,10 @@ let pUid = 1000; // project task id counter (separate namespace)
 let folders = [];
 let fUid = 2000;
 
-// ── Horizons: [{ id, name, text }] ────────────────────────────────────────────
+// ── Horizons: [{ id, name, items: [{ id, text, notes }] }] ───────────────────
 let horizons = [];
 let hUid = 1;
+let hItemUid = 5000;
 
 // ── Wire toggle ───────────────────────────────────────────────────────────────
 let wiresVisible = true;
@@ -3755,7 +3857,7 @@ let _dataLoaded = false; // true once we've confirmed data was loaded (or confir
 
 function saveToStorage() {
   const now = Date.now();
-  const payload = { tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid, folders, fUid, savedAt: now };
+  const payload = { tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid, hItemUid, folders, fUid, savedAt: now };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e) {}
   if (!_dataLoaded) return; // don't overwrite Supabase if we couldn't confirm load
   clearTimeout(_sbSaveTimer);
@@ -3778,7 +3880,7 @@ function saveBackupSnapshot() {
     const now = Date.now();
     // Rate-limit: at most one snapshot per hour
     if (backups.length > 0 && now - backups[0].ts < 3600000) return;
-    backups.unshift({ ts: now, tasks, uid, projects, pUid, horizons, hUid, folders, fUid, hideCompleted, tlStart, tlEnd });
+    backups.unshift({ ts: now, tasks, uid, projects, pUid, horizons, hUid, hItemUid, folders, fUid, hideCompleted, tlStart, tlEnd });
     if (backups.length > MAX_BACKUPS) backups.length = MAX_BACKUPS;
     localStorage.setItem(BACKUP_KEY, JSON.stringify(backups));
   } catch(e) {}
@@ -3851,13 +3953,28 @@ function applyStorageData(data) {
   if (Array.isArray(data.projects))            projects      = data.projects;
   if (typeof data.pUid === 'number')           pUid          = data.pUid;
   if (typeof data.hUid === 'number')           hUid          = data.hUid;
+  if (typeof data.hItemUid === 'number')       hItemUid      = data.hItemUid;
   if (Array.isArray(data.folders))             folders       = data.folders;
   if (typeof data.fUid === 'number')           fUid          = data.fUid;
   if (Array.isArray(data.horizons)) {
     horizons = data.horizons;
+    // Migrate old format: horizon has text string instead of items array
+    horizons.forEach(h => {
+      if (!Array.isArray(h.items)) {
+        if (h.text) {
+          h.items = [{ id: hItemUid++, text: 'Notes', notes: h.text }];
+        } else {
+          h.items = [];
+        }
+        delete h.text;
+      }
+    });
   } else if (data.horizons && typeof data.horizons === 'object') {
     let i = 1;
-    horizons = Object.entries(data.horizons).map(([name, text]) => ({ id: i++, name, text }));
+    horizons = Object.entries(data.horizons).map(([name, text]) => ({
+      id: i++, name,
+      items: text ? [{ id: hItemUid++, text: 'Notes', notes: text }] : []
+    }));
     hUid = Math.max(hUid, i);
   }
   saveBackupSnapshot();
@@ -3934,7 +4051,7 @@ $('#btn-overflow')?.addEventListener('click', () => {
   $('#btn-overflow')?.classList.toggle('active');
 });
 function doExport() {
-  const data = JSON.stringify({ tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid }, null, 2);
+  const data = JSON.stringify({ tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid, hItemUid }, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `tasks-${todayStr()}.json`; a.click(); URL.revokeObjectURL(a.href);
@@ -4224,6 +4341,10 @@ $('#notes-modal-close').addEventListener('click', () => closeNotesModal());
 $('#notes-modal-done').addEventListener('click', () => closeNotesModal());
 $('#notes-modal').addEventListener('mousedown', e => { if (e.target === $('#notes-modal')) closeNotesModal(); });
 $('#notes-textarea').addEventListener('keydown', e => { if (e.key === 'Escape') closeNotesModal(); });
+
+$('#hn-close').addEventListener('click', () => closeHorizonNote());
+$('#hn-sheet').addEventListener('click', e => { if (e.target === $('#hn-sheet')) closeHorizonNote(); });
+$('#hn-sheet-ta').addEventListener('keydown', e => { if (e.key === 'Escape') closeHorizonNote(); });
 
 // ── Move between schedule and projects ────────────────────────────────────────
 function showMovePicker(anchor, onSelectProj, onSelectFolder) {
@@ -5043,6 +5164,29 @@ function renderRepeaters() {
   panel.appendChild(addBtn);
 }
 
+// ── Horizon note sheet ─────────────────────────────────────────────────────────
+let _hnHorizon = null, _hnItem = null;
+
+function openHorizonNote(horizon, item) {
+  _hnHorizon = horizon; _hnItem = item;
+  $('#hn-sheet-title').textContent = `${horizon.name} › ${item.text || 'Untitled'}`;
+  $('#hn-sheet-ta').value = item.notes || '';
+  $('#hn-sheet').style.display = 'flex';
+  requestAnimationFrame(() => $('#hn-sheet-card').classList.add('open'));
+  setTimeout(() => $('#hn-sheet-ta').focus(), 300);
+}
+
+function closeHorizonNote() {
+  if (_hnItem) {
+    _hnItem.notes = $('#hn-sheet-ta').value;
+    saveToStorage();
+  }
+  $('#hn-sheet-card').classList.remove('open');
+  setTimeout(() => { $('#hn-sheet').style.display = 'none'; }, 280);
+  _hnHorizon = null; _hnItem = null;
+  if (currentTab === 'horizons') renderHorizons();
+}
+
 // ── Horizons render ────────────────────────────────────────────────────────────
 function renderHorizons() {
   const panel = $('#horizons-panel');
@@ -5112,13 +5256,59 @@ function renderHorizons() {
     });
     head.append(handle, nameEl, delBtn);
 
-    const ta = document.createElement('textarea'); ta.className = 'horizon-ta';
-    ta.placeholder = `Planning notes for ${h.name}…`;
-    ta.value = h.text || '';
-    ta.addEventListener('input', () => { h.text = ta.value; });
-    ta.addEventListener('blur',  () => { h.text = ta.value; saveToStorage(); });
+    // Bullet list of items
+    if (!Array.isArray(h.items)) h.items = [];
+    const itemsList = document.createElement('div'); itemsList.className = 'h-items-list';
 
-    section.append(head, ta);
+    function renderItems() {
+      itemsList.innerHTML = '';
+      h.items.forEach((item, j) => {
+        const row = document.createElement('div');
+        row.className = 'h-item-row' + (item.notes ? ' h-item-has-notes' : '');
+
+        const bullet = document.createElement('span'); bullet.className = 'h-item-bullet';
+
+        const textEl = document.createElement('span');
+        textEl.className = 'h-item-text'; textEl.contentEditable = 'true';
+        textEl.spellcheck = false; textEl.textContent = item.text || '';
+        textEl.addEventListener('click', e => e.stopPropagation());
+        textEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); textEl.blur(); } });
+        textEl.addEventListener('blur', () => {
+          item.text = textEl.textContent.trim() || item.text;
+          saveToStorage();
+        });
+
+        const delItem = document.createElement('button'); delItem.className = 'h-item-del';
+        delItem.textContent = '×';
+        delItem.addEventListener('click', e => {
+          e.stopPropagation();
+          h.items.splice(j, 1); saveToStorage(); renderItems();
+        });
+
+        row.addEventListener('click', e => {
+          if (e.target === textEl || e.target === delItem) return;
+          openHorizonNote(h, item);
+        });
+
+        row.append(bullet, textEl, delItem);
+        itemsList.appendChild(row);
+      });
+    }
+    renderItems();
+
+    const addItemBtn = document.createElement('button'); addItemBtn.className = 'btn-add-hitem';
+    addItemBtn.textContent = '+ Add item';
+    addItemBtn.addEventListener('click', () => {
+      const newItem = { id: hItemUid++, text: '', notes: '' };
+      h.items.push(newItem); saveToStorage(); renderItems();
+      setTimeout(() => {
+        const all = itemsList.querySelectorAll('.h-item-text');
+        const last = all[all.length - 1];
+        if (last) { last.focus(); document.execCommand('selectAll', false, null); }
+      }, 30);
+    });
+
+    section.append(head, itemsList, addItemBtn);
     if (i < horizons.length - 1) {
       const div = document.createElement('div'); div.className = 'horizon-divider';
       section.appendChild(div);
@@ -5130,7 +5320,7 @@ function renderHorizons() {
   const addBtn = document.createElement('button'); addBtn.className = 'btn-add-horizon';
   addBtn.textContent = '+ Add Horizon';
   addBtn.addEventListener('click', () => {
-    horizons.push({ id: hUid++, name: 'New Horizon', text: '' });
+    horizons.push({ id: hUid++, name: 'New Horizon', items: [] });
     saveToStorage(); renderHorizons();
     // Focus the new name for immediate editing
     setTimeout(() => {
