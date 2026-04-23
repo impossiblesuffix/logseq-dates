@@ -498,7 +498,7 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
 .drag-handle {
   flex-shrink: 0; width: 13px; height: 26px; cursor: grab;
   display: grid; place-items: center;
-  color: #d8d8e0; font-size: 10px; opacity: 0;
+  color: #a8a8bc; font-size: 12px; opacity: 0;
   transition: opacity .1s; user-select: none; touch-action: none;
 }
 .task-row:hover .drag-handle,
@@ -1410,7 +1410,7 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
 /* ── Mobile layout ───────────────────────────────────────────────── */
 @media (hover: none) {
   /* Minimal drag handle — narrow so tasks stay near-left */
-  .drag-handle { width: 10px; opacity: 0.3 !important; }
+  .drag-handle { width: 10px; opacity: 0.55 !important; }
 
   /* Hide all inline action buttons — accessed via ⋯ menu instead */
   .task-row .evt-toggle,
@@ -1448,19 +1448,40 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(79,70,229,.3); }
   .view-toggle-btn { font-size: 13px; padding: 5px 10px; }
   .btn-icon, .btn-settings, .btn-overflow { font-size: 24px; }
 
-  /* ── Show text-size setting only on mobile ── */
-  #settings-text-size { display: flex !important; }
 }
 
-/* ── Large text mode (toggled via settings) ──────────────────────── */
-body.ui-large .tl-label      { font-size: 12px !important; color: #585868 !important; }
-body.ui-large .view-toggle-btn { font-size: 14px !important; }
-body.ui-large .pill-text     { font-size: 14px !important; }
-body.ui-large .task-row.is-header .pill-text { font-size: 12.5px !important; }
-body.ui-large .time-badge    { font-size: 11px !important; }
-body.ui-large .btn-icon, body.ui-large .btn-settings,
-body.ui-large .btn-overflow  { font-size: 22px !important; }
-#settings-text-size { display: none; } /* hidden on desktop */
+/* ── Text size: Medium ───────────────────────────────────────────── */
+body.ui-size-md .pill-text                    { font-size: 15px !important; }
+body.ui-size-md .task-row.is-header .pill-text { font-size: 14px !important; }
+body.ui-size-md .time-badge                   { font-size: 12px !important; }
+body.ui-size-md .tl-label  { font-size: 11px !important; color: #686878 !important; }
+body.ui-size-md .view-toggle-btn              { font-size: 13px !important; }
+body.ui-size-md .btn-icon, body.ui-size-md .btn-settings,
+body.ui-size-md .btn-overflow                 { font-size: 22px !important; }
+
+/* ── Text size: Large ────────────────────────────────────────────── */
+body.ui-size-lg .pill-text                    { font-size: 17px !important; }
+body.ui-size-lg .task-row.is-header .pill-text { font-size: 16px !important; }
+body.ui-size-lg .time-badge                   { font-size: 14px !important; }
+body.ui-size-lg .tl-label  { font-size: 13px !important; color: #585868 !important; }
+body.ui-size-lg .view-toggle-btn              { font-size: 15px !important; }
+body.ui-size-lg .btn-icon, body.ui-size-lg .btn-settings,
+body.ui-size-lg .btn-overflow                 { font-size: 26px !important; }
+
+/* ── Size-seg control ────────────────────────────────────────────── */
+.size-seg { display: flex; border: 1px solid #e0e0ea; border-radius: 6px; overflow: hidden; }
+.size-seg-btn {
+  border: none; background: transparent; padding: 5px 11px;
+  font-size: 11px; font-weight: 700; color: #a0a0b0; cursor: pointer;
+  font-family: inherit; touch-action: manipulation;
+  transition: background .1s, color .1s; user-select: none;
+}
+.size-seg-btn + .size-seg-btn { border-left: 1px solid #e0e0ea; }
+.size-seg-btn.active { background: #f0f0f8; color: #4f46e5; }
+body.dark .size-seg { border-color: #36363e; }
+body.dark .size-seg-btn { color: #585868; }
+body.dark .size-seg-btn + .size-seg-btn { border-color: #36363e; }
+body.dark .size-seg-btn.active { background: #242438; color: #7c79f0; }
 
 /* ── Task context menu button (hidden on desktop) ────────────────── */
 .task-menu-btn {
@@ -1591,7 +1612,7 @@ body.dark .pill-text { color: #d0d0d8; }
 body.dark .pill.done .pill-text { color: #404050; }
 body.dark .task-row.is-header .pill-text { color: #606072; }
 body.dark .task-row.is-header .pill:hover { background: rgba(255,255,255,.02); }
-body.dark .drag-handle { color: #303040; }
+body.dark .drag-handle { color: #6868a0; }
 body.dark .task-del, body.dark .header-del { color: #303040; }
 body.dark .pill-chk { border-color: #383848; }
 body.dark .pill-chk:hover { border-color: #7c79f0; }
@@ -1890,11 +1911,12 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
     </label>
   </div>
   <div class="settings-item" id="settings-text-size">
-    <span class="settings-item-label">Large text</span>
-    <label class="toggle-sw">
-      <input type="checkbox" id="toggle-ui-large">
-      <span class="toggle-track"></span>
-    </label>
+    <span class="settings-item-label">Text size</span>
+    <div class="size-seg" id="size-seg">
+      <button class="size-seg-btn active" data-size="">S</button>
+      <button class="size-seg-btn" data-size="md">M</button>
+      <button class="size-seg-btn" data-size="lg">L</button>
+    </div>
   </div>
   <div class="settings-divider"></div>
   <div class="settings-item" style="flex-direction:column;align-items:flex-start;gap:2px">
@@ -3820,9 +3842,17 @@ function setHideCompleted(on) {
   saveToStorage(); rerender();
 }
 $('#toggle-hide-done').addEventListener('change', e => setHideCompleted(e.target.checked));
-$('#toggle-ui-large').addEventListener('change', e => {
-  document.body.classList.toggle('ui-large', e.target.checked);
-  localStorage.setItem('habit-watcher-ui-large', e.target.checked ? '1' : '0');
+function applyUiSize(size) {
+  document.body.classList.remove('ui-size-md', 'ui-size-lg');
+  if (size) document.body.classList.add('ui-size-' + size);
+  $$('.size-seg-btn').forEach(b => b.classList.toggle('active', b.dataset.size === size));
+}
+$$('.size-seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const size = btn.dataset.size;
+    applyUiSize(size);
+    localStorage.setItem('habit-watcher-ui-size', size);
+  });
 });
 $('#btn-hide-done')?.addEventListener('click', () => {
   setHideCompleted(!hideCompleted);
@@ -5227,9 +5257,10 @@ async function startApp() {
   await loadFromSupabase();
   $('#auth-screen').style.display = 'none';
   $('#toggle-hide-done').checked = hideCompleted;
-  const uiLarge = localStorage.getItem('habit-watcher-ui-large') === '1';
-  document.body.classList.toggle('ui-large', uiLarge);
-  $('#toggle-ui-large').checked = uiLarge;
+  const savedSize = localStorage.getItem('habit-watcher-ui-size');
+  const isMobile = window.matchMedia('(hover: none)').matches;
+  const uiSize = savedSize !== null ? savedSize : (isMobile ? 'md' : '');
+  applyUiSize(uiSize);
   if (horizons.length === 0) horizons = initDefaultHorizons();
   populateTimeSelects();
   buildDatePanel();
