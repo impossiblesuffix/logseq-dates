@@ -3656,8 +3656,12 @@ function dpNavYear(delta) {
 const STORAGE_KEY = 'habit-watcher-v1';
 
 let _sbSaveTimer = null;
+let _lastSavedAt = 0;   // timestamp of last successful Supabase write (or load)
+let _realtimeChannel = null;
+
 function saveToStorage() {
-  const payload = { tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid, folders, fUid };
+  const now = Date.now();
+  const payload = { tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid, folders, fUid, savedAt: now };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e) {}
   clearTimeout(_sbSaveTimer);
   _sbSaveTimer = setTimeout(async () => {
@@ -3668,10 +3672,28 @@ function saveToStorage() {
       { onConflict: 'id' }
     );
     if (error) console.error('Supabase save failed:', error);
+    else _lastSavedAt = now;
   }, 1500);
 }
 
+function setupRealtime(userId) {
+  if (_realtimeChannel) { _sb.removeChannel(_realtimeChannel); _realtimeChannel = null; }
+  _realtimeChannel = _sb.channel(`hw-${userId}`)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_data', filter: `id=eq.${userId}` },
+      payload => {
+        const remote = payload.new?.data;
+        if (!remote) return;
+        // skip if this is our own write or an older state
+        if (remote.savedAt && remote.savedAt <= _lastSavedAt) return;
+        applyStorageData(remote);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch(e) {}
+        rerender();
+      })
+    .subscribe();
+}
+
 function applyStorageData(data) {
+  if (typeof data.savedAt === 'number' && data.savedAt > _lastSavedAt) _lastSavedAt = data.savedAt;
   if (Array.isArray(data.tasks)) {
     tasks = data.tasks;
     tasks.forEach(t => { if (COLORS.includes(t.color)) t.color = null; });
@@ -5186,6 +5208,17 @@ document.addEventListener('click', e => {
   if (_settingsOpen && !$('#settings-panel').contains(e.target)) closeSettings();
 });
 
+let _hiddenAt = 0;
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'hidden') {
+    _hiddenAt = Date.now();
+  } else if (_hiddenAt && Date.now() - _hiddenAt > 30000) {
+    // came back after 30s+ — pull latest from Supabase
+    await loadFromSupabase();
+    rerender();
+  }
+});
+
 async function startApp() {
   await loadFromSupabase();
   $('#auth-screen').style.display = 'none';
@@ -5201,6 +5234,9 @@ async function startApp() {
     const h = $('#card-body').clientHeight - 16;
     applyZoom(Math.max(PPM_MIN, h / (tlEnd - tlStart)));
   });
+  // set up real-time sync
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) setupRealtime(session.user.id);
 }
 
 $('#auth-submit').addEventListener('click', async () => {
