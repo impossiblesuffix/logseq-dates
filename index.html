@@ -961,17 +961,24 @@ body.tab-projects #btn-add-group { display: none; }
 .folder-head:hover .folder-del { opacity: 1; }
 .folder-del:hover { color: #ef4444; }
 .folder-tasks { padding: 0 0 2px; }
+/* outer wrapper for non-group folder tasks */
+.ftask-outer {
+  display: flex; align-items: center; gap: 3px;
+  margin: 2px 0; position: relative;
+}
 .ftask-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 4px 9px 4px 8px; min-height: 24px;
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  padding: 4px 9px 4px 8px; min-height: 24px; min-width: 0;
 }
 .ftask-row.is-group { padding-top: 6px; }
 .ftask-row:not(.is-group) {
   background: #f8f8fb; border: 1px solid #e8e8ed; border-radius: 7px;
-  margin: 2px 8px; transition: background .1s, border-color .1s;
+  margin: 0 8px 0 0; transition: background .1s, border-color .1s;
 }
+.ftask-outer:hover .ftask-row:not(.is-group),
 .ftask-row:not(.is-group):hover { background: #f0f0f5; border-color: #d8d8e4; }
 body.dark .ftask-row:not(.is-group) { background: #1a1a22; border-color: #2a2a36; }
+body.dark .ftask-outer:hover .ftask-row:not(.is-group),
 body.dark .ftask-row:not(.is-group):hover { background: #20202c; border-color: #363648; }
 .ftask-group-text {
   flex: 1; font-size: var(--fs-sub); font-weight: 700; color: #707080;
@@ -1044,14 +1051,22 @@ body.dark .ftask-row:not(.is-group):hover { background: #20202c; border-color: #
 }
 .project-head:hover .project-del { opacity: 1; }
 .project-del:hover { color: #ef4444; }
+/* outer wrapper = task-row equivalent (no border) */
+.ptask-outer {
+  display: flex; align-items: center; gap: 3px;
+  margin: 2px 0; position: relative;
+}
+/* inner pill = bordered pill */
 .ptask-row {
-  display: flex; align-items: center; gap: 6px; position: relative;
+  flex: 1; display: flex; align-items: center; gap: 6px; position: relative;
   background: #f8f8fb; border: 1px solid #e8e8ed; border-radius: 7px;
-  margin: 2px 8px; padding: 4px 9px 4px 8px;
+  margin: 0 8px 0 0; padding: 4px 9px 4px 8px; min-width: 0;
   transition: background .1s, border-color .1s;
 }
+.ptask-outer:hover .ptask-row,
 .ptask-row:hover { background: #f0f0f5; border-color: #d8d8e4; }
 body.dark .ptask-row { background: #1a1a22; border-color: #2a2a36; }
+body.dark .ptask-outer:hover .ptask-row,
 body.dark .ptask-row:hover { background: #20202c; border-color: #363648; }
 .ptask-text {
   flex: 1; font-size: var(--fs-task); font-family: inherit; font-weight: 500;
@@ -1234,7 +1249,7 @@ body.tab-horizons #btn-add-group { display: none; }
 }
 .horizon-ta:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 2px rgba(var(--accent-rgb),.08); }
 .horizon-ta::placeholder { color: #c8c8d8; }
-.horizon-divider { height: 1px; background: #f0f0f4; margin: 4px 0 14px; }
+.horizon-divider { height: 1px; background: rgba(0,0,0,.06); margin: 4px 0 14px; }
 
 /* .btn-hide-done.active handled by .overflow-item.btn-hide-done.active above */
 
@@ -1255,11 +1270,11 @@ body.tab-repeaters #btn-add-group { display: none; }
 .rep-section-head {
   font-size: var(--fs-label); font-weight: 700; color: #a0a0b0; letter-spacing: .4px;
   text-transform: uppercase; padding: 6px 0 5px;
-  border-bottom: 1px solid #f0f0f2; margin-bottom: 4px;
+  border-bottom: 1px solid rgba(0,0,0,.06); margin-bottom: 4px;
 }
 .rep-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 5px 0; border-bottom: 1px solid #f6f6f8;
+  padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,.04);
 }
 .rep-name {
   flex: 1; font-size: var(--fs-task); font-weight: 500; color: #1a1a1f; min-width: 0;
@@ -1367,6 +1382,27 @@ body.tab-repeaters #btn-add-group { display: none; }
 }
 .h-item-row:hover .h-item-del { opacity: 1; }
 .h-item-del:hover { color: #ef4444; }
+.h-item-more {
+  flex-shrink: 0; border: none; background: transparent;
+  font-size: 14px; color: #b0b0bc; cursor: pointer; padding: 0 2px;
+  opacity: 0; transition: opacity .12s, color .12s; line-height: 1;
+  font-family: inherit;
+}
+.h-item-row:hover .h-item-more { opacity: 1; }
+.h-item-more:hover { color: #52525b; }
+body.dark .h-item-more { color: #38384a; }
+body.dark .h-item-more:hover { color: #808090; }
+/* Archive section */
+.horizon-archive-wrap { margin-top: 8px; }
+.horizon-archive-toggle {
+  display: block; width: 100%; text-align: left; border: none; background: none;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: #ababbc;
+  padding: 6px 4px; cursor: pointer; letter-spacing: .04em; transition: color .1s;
+}
+.horizon-archive-toggle:hover { color: #7070a0; }
+.horizon-archived .horizon-name-edit { opacity: 0.55; cursor: default; }
+body.dark .horizon-archive-toggle { color: #404050; }
+body.dark .horizon-archive-toggle:hover { color: #7070a0; }
 .btn-add-hitem {
   display: block; width: 100%;
   border: none; background: transparent; font-family: inherit;
@@ -1491,22 +1527,17 @@ body.dark .section-menu-item.danger { color: #fc8181; }
 body.dark .section-menu-item.danger:hover { background: #2d1f1f; }
 
 /* ── Task rows hover-to-reveal (desktop only) ────────────────────── */
+/* Desktop: drag handles hide at rest, reveal on outer-row hover */
 @media (hover: hover) {
-  .ptask-row .drag-handle,
-  .ftask-row .drag-handle  { opacity: 0; transition: opacity .1s; }
-  .ptask-row:hover .drag-handle,
-  .ftask-row:hover .drag-handle { opacity: 1; }
-
-  .ptask-row .task-menu-btn,
-  .ftask-row .task-menu-btn  { opacity: 0; transition: opacity .1s; }
-  .ptask-row:hover .task-menu-btn,
-  .ftask-row:hover .task-menu-btn { opacity: 1; }
+  .ptask-outer .drag-handle,
+  .ftask-outer .drag-handle  { opacity: 0; transition: opacity .1s; }
+  .ptask-outer:hover .drag-handle,
+  .ftask-outer:hover .drag-handle { opacity: 1; }
 }
+/* Mobile: drag handles always visible */
 @media (hover: none) {
-  .ptask-row .drag-handle,
-  .ftask-row .drag-handle,
-  .ptask-row .task-menu-btn,
-  .ftask-row .task-menu-btn { opacity: 1; }
+  .ptask-outer .drag-handle,
+  .ftask-outer .drag-handle  { opacity: 1; }
 }
 
 /* ── Quick-add modal picker items ────────────────────────────────── */
@@ -1796,10 +1827,8 @@ body.dark .accent-swatch.active { box-shadow: 0 0 0 1.5px #1d1d22 inset; }
 .task-menu-btn:active { color: var(--accent); }
 .ptask-row .task-menu-btn,
 .ftask-row:not(.is-group) .task-menu-btn {
-  display: flex; opacity: 0; transition: opacity .12s;
+  display: flex; opacity: 1;
 }
-.ptask-row:hover .task-menu-btn,
-.ftask-row:hover .task-menu-btn { opacity: 1; }
 
 /* ── Task context menu dropdown ──────────────────────────────────── */
 .task-ctx-menu {
@@ -2061,7 +2090,10 @@ body.dark .btn-rep-sched { background: #242438; color: #7c79f0; }
 body.dark #add-modal > div,
 body.dark #notes-modal > div,
 body.dark #repeat-modal > div,
-body.dark #sched-modal .modal-card { background: #1d1d24; box-shadow: 0 12px 48px rgba(0,0,0,.6); }
+body.dark #sched-modal .modal-card,
+body.dark #quick-add-modal .modal-card { background: #1d1d24; box-shadow: 0 12px 48px rgba(0,0,0,.6); }
+body.dark #qa-title { color: #d0d0d8; }
+body.dark #qa-text { background: #26262e; border-color: #36363e !important; color: #e4e4e8; }
 body.dark .modal-card h3 { color: #d0d0d8; }
 body.dark .modal-text-input { background: #26262e; border-color: #36363e; color: #e4e4e8; }
 body.dark .modal-text-input:focus { border-color: #7c79f0; box-shadow: 0 0 0 2px rgba(124,121,240,.15); }
@@ -4149,7 +4181,7 @@ function setupRealtime(userId) {
         applyStorageData(remote);
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch(e) {}
         if (_editingActive) { _pendingRerender = true; }
-        else { rerender(); }
+        else { rerender(true); }
       })
     .subscribe();
 }
@@ -4242,7 +4274,8 @@ function _markNowNextPills() {
 }
 
 // ── Rerender ──────────────────────────────────────────────────────────────────
-function rerender() {
+function rerender(fromRealtime = false) {
+  if (fromRealtime && _editingActive) { _pendingRerender = true; return; }
   saveToStorage();
   if (folderDrawerOpen) { drawerSubTab === 'folders' ? renderFolders($('#drawer-folders-list')) : renderDrawerProjects(); }
   if (currentTab === 'projects')  { projSubTab === 'folders' ? renderFolders() : renderProjects(); return; }
@@ -5098,7 +5131,7 @@ function setupFolderTaskDrag(handle, task) {
     e.preventDefault();
     handle.setPointerCapture(e.pointerId);
     document.body.classList.add('dragging-active');
-    const rowR = handle.closest('.ftask-row').getBoundingClientRect();
+    const rowR = (handle.closest('.ftask-outer') || handle.closest('.ftask-row')).getBoundingClientRect();
     const offX = e.clientX - rowR.left, offY = e.clientY - rowR.top;
     const ghost = document.createElement('div'); ghost.className = 'drag-ghost';
     ghost.style.cssText = `width:${rowR.width}px;left:${rowR.left}px;top:${rowR.top}px;`;
@@ -5281,11 +5314,11 @@ function renderFolders(container) {
 
       folderTasks.forEach((ft) => {
         if (hideCompleted && ft.done) return;
-        const row = document.createElement('div');
-        row.className = 'ftask-row' + (ft.isHeader ? ' is-group' : '');
-        row.style.paddingLeft = (8 + ft.indent * INDENT_W) + 'px';
 
         if (ft.isHeader) {
+          const row = document.createElement('div');
+          row.className = 'ftask-row is-group';
+          row.style.paddingLeft = (8 + ft.indent * INDENT_W) + 'px';
           const txt = document.createElement('div'); txt.className = 'ftask-group-text';
           txt.contentEditable = 'true'; txt.spellcheck = false; txt.textContent = ft.text;
           txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
@@ -5293,7 +5326,11 @@ function renderFolders(container) {
           const del = document.createElement('button'); del.className = 'ptask-del'; del.textContent = '×';
           del.addEventListener('click', () => { tasks = tasks.filter(t => t.id !== ft.id); saveToStorage(); renderFolders(); });
           row.append(txt, del);
+          taskList.appendChild(row);
         } else {
+          const outer = document.createElement('div'); outer.className = 'ftask-outer';
+          outer.style.paddingLeft = (8 + ft.indent * INDENT_W) + 'px';
+          const row = document.createElement('div'); row.className = 'ftask-row';
           const ftHandle = document.createElement('div'); ftHandle.className = 'drag-handle'; ftHandle.innerHTML = '⠿';
           setupFolderTaskDrag(ftHandle, ft);
           const chk = document.createElement('div'); chk.className = 'pill-chk' + (ft.done ? ' done' : '');
@@ -5304,17 +5341,13 @@ function renderFolders(container) {
           txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
           txt.addEventListener('focus', () => { _editingActive = true; });
           txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
-          row.appendChild(ftHandle);
 
           // Schedule badge or button
           if (ft.sched) {
             const label = ft.sched.t ? ft.sched.t : (ft.sched.date || '').slice(5);
             const badge = document.createElement('span'); badge.className = 'ftask-sched-badge';
             badge.textContent = label; badge.title = 'Click to unschedule';
-            badge.addEventListener('click', e => {
-              e.stopPropagation();
-              ft.sched = null; saveToStorage(); renderFolders();
-            });
+            badge.addEventListener('click', e => { e.stopPropagation(); ft.sched = null; saveToStorage(); renderFolders(); });
             row.append(chk, txt, badge);
           } else {
             const schedBtn = document.createElement('span'); schedBtn.className = 'ftask-sched-badge';
@@ -5322,11 +5355,7 @@ function renderFolders(container) {
             schedBtn.style.transition = 'opacity .12s';
             row.addEventListener('mouseenter', () => schedBtn.style.opacity = '1');
             row.addEventListener('mouseleave', () => schedBtn.style.opacity = '0');
-            schedBtn.addEventListener('click', e => {
-              e.stopPropagation();
-              datePanelTarget = ft;
-              openDatePanel($('#btn-cal-toggle'));
-            });
+            schedBtn.addEventListener('click', e => { e.stopPropagation(); datePanelTarget = ft; openDatePanel($('#btn-cal-toggle')); });
             row.append(chk, txt, schedBtn);
           }
 
@@ -5339,8 +5368,9 @@ function renderFolders(container) {
             ], menuBtn);
           });
           row.append(menuBtn);
+          outer.append(ftHandle, row);
+          taskList.appendChild(outer);
         }
-        taskList.appendChild(row);
       });
 
       block.append(taskList);
@@ -5414,8 +5444,9 @@ function renderProjects() {
       for (let i = 0; i < proj.tasks.length; i++) {
         const pt = proj.tasks[i];
         if (hideCompleted && pt.done) continue;
+        const outer = document.createElement('div'); outer.className = 'ptask-outer';
+        outer.style.paddingLeft = (12 + pt.indent * INDENT_W) + 'px';
         const row = document.createElement('div'); row.className = 'ptask-row';
-        row.style.paddingLeft = (12 + pt.indent * INDENT_W) + 'px';
         const chk = document.createElement('div');
         chk.className = 'pill-chk' + (pt.done ? ' done' : '');
         chk.addEventListener('click', () => { pt.done = !pt.done; saveToStorage(); renderProjects(); });
@@ -5461,7 +5492,7 @@ function renderProjects() {
         txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
         const ptHandle = document.createElement('div');
         ptHandle.className = 'drag-handle'; ptHandle.innerHTML = '⠿';
-        setupProjectTaskDrag(ptHandle, row, proj, pt);
+        setupProjectTaskDrag(ptHandle, outer, proj, pt);
         const menuBtn = document.createElement('button'); menuBtn.className = 'task-menu-btn'; menuBtn.textContent = '⋯';
         menuBtn.addEventListener('click', e => {
           e.stopPropagation();
@@ -5471,8 +5502,9 @@ function renderProjects() {
             { label: 'Delete', fn: () => { proj.tasks.splice(i, 1); saveToStorage(); renderProjects(); }, danger: true }
           ], menuBtn);
         });
-        row.append(ptHandle, chk, txt, menuBtn);
-        taskList.appendChild(row);
+        row.append(chk, txt, menuBtn);
+        outer.append(ptHandle, row);
+        taskList.appendChild(outer);
       }
       block.append(taskList);
     }
@@ -5652,15 +5684,18 @@ function closeHorizonNote() {
 function renderHorizons() {
   const panel = $('#horizons-panel');
   panel.innerHTML = '';
-  let dragSrcIdx = null;
+  let dragSrcH = null;
 
-  horizons.forEach((h, i) => {
+  const activeH = horizons.filter(h => !h.archived);
+  const archivedH = horizons.filter(h => h.archived);
+
+  activeH.forEach((h, ai) => {
     const section = document.createElement('div'); section.className = 'horizon-section';
     section.draggable = true;
 
     // Drag events
     section.addEventListener('dragstart', e => {
-      dragSrcIdx = i;
+      dragSrcH = h;
       e.dataTransfer.effectAllowed = 'move';
       setTimeout(() => section.style.opacity = '0.4', 0);
     });
@@ -5669,7 +5704,7 @@ function renderHorizons() {
       $$('.horizon-section').forEach(s => s.classList.remove('h-drag-over-top', 'h-drag-over-bottom'));
     });
     section.addEventListener('dragover', e => {
-      if (dragSrcIdx === null || dragSrcIdx === i) return;
+      if (!dragSrcH || dragSrcH === h) return;
       e.preventDefault();
       const r = section.getBoundingClientRect();
       const isTop = e.clientY < r.top + r.height / 2;
@@ -5682,26 +5717,25 @@ function renderHorizons() {
     section.addEventListener('drop', e => {
       e.preventDefault();
       $$('.horizon-section').forEach(s => s.classList.remove('h-drag-over-top', 'h-drag-over-bottom'));
-      if (dragSrcIdx === null || dragSrcIdx === i) return;
+      if (!dragSrcH || dragSrcH === h) return;
       const r = section.getBoundingClientRect();
       const isTop = e.clientY < r.top + r.height / 2;
-      const [moved] = horizons.splice(dragSrcIdx, 1);
-      let insertAt = i > dragSrcIdx ? i - 1 : i;
+      const srcIdx = horizons.indexOf(dragSrcH);
+      const [moved] = horizons.splice(srcIdx, 1);
+      let insertAt = horizons.indexOf(h);
       if (!isTop) insertAt++;
       horizons.splice(insertAt, 0, moved);
-      dragSrcIdx = null;
+      dragSrcH = null;
       saveToStorage(); renderHorizons();
     });
 
     const head = document.createElement('div'); head.className = 'horizon-head';
     const handle = document.createElement('span'); handle.className = 'horizon-drag-handle'; handle.textContent = '⠿';
-    // Prevent drag from starting when clicking the name/delete
     handle.addEventListener('mousedown', e => e.stopPropagation());
     section.addEventListener('mousedown', e => {
       if (!e.target.closest('.horizon-drag-handle')) section.draggable = false;
     });
     section.addEventListener('mouseup', () => { section.draggable = true; });
-    // Editable name
     const nameEl = document.createElement('div');
     nameEl.className = 'horizon-name-edit'; nameEl.contentEditable = 'true';
     nameEl.spellcheck = false; nameEl.textContent = h.name;
@@ -5724,7 +5758,8 @@ function renderHorizons() {
     moreBtn.addEventListener('click', e => {
       e.stopPropagation();
       openSectionMenu([
-        { label: 'Delete', danger: true, fn: () => { horizons.splice(i, 1); saveToStorage(); renderHorizons(); } }
+        { label: 'Archive', fn: () => { h.archived = true; saveToStorage(); renderHorizons(); } },
+        { label: 'Delete', danger: true, fn: () => { horizons.splice(horizons.indexOf(h), 1); saveToStorage(); renderHorizons(); } }
       ], moreBtn);
     });
     head.append(handle, nameEl, addBtn, moreBtn);
@@ -5753,31 +5788,82 @@ function renderHorizons() {
           saveToStorage();
         });
 
-        const delItem = document.createElement('button'); delItem.className = 'h-item-del';
-        delItem.textContent = '×';
-        delItem.addEventListener('click', e => {
+        const hMoreBtn = document.createElement('button'); hMoreBtn.className = 'h-item-more';
+        hMoreBtn.textContent = '⋯';
+        hMoreBtn.addEventListener('click', e => {
           e.stopPropagation();
-          h.items.splice(j, 1); saveToStorage(); renderItems();
+          openSectionMenu([
+            { label: 'Edit notes', fn: () => openHorizonNote(h, item) },
+            { label: 'Delete', danger: true, fn: () => { h.items.splice(j, 1); saveToStorage(); renderItems(); } }
+          ], hMoreBtn);
         });
 
-        row.addEventListener('click', e => {
-          if (e.target === textEl || e.target === delItem) return;
-          openHorizonNote(h, item);
-        });
-
-        row.append(bullet, textEl, delItem);
+        row.append(bullet, textEl, hMoreBtn);
         itemsList.appendChild(row);
       });
     }
     renderItems();
 
     section.append(head, itemsList);
-    if (i < horizons.length - 1) {
+    if (ai < activeH.length - 1) {
       const div = document.createElement('div'); div.className = 'horizon-divider';
       section.appendChild(div);
     }
     panel.appendChild(section);
   });
+
+  // Archived horizons collapsible section
+  if (archivedH.length > 0) {
+    if (activeH.length > 0) {
+      const div = document.createElement('div'); div.className = 'horizon-divider';
+      panel.appendChild(div);
+    }
+    const archWrap = document.createElement('div'); archWrap.className = 'horizon-archive-wrap';
+    let archOpen = false;
+
+    const archToggle = document.createElement('button'); archToggle.className = 'horizon-archive-toggle';
+    archToggle.textContent = `▸ Archived (${archivedH.length})`;
+
+    const archList = document.createElement('div');
+    archList.style.display = 'none';
+
+    archToggle.addEventListener('click', () => {
+      archOpen = !archOpen;
+      archList.style.display = archOpen ? '' : 'none';
+      archToggle.textContent = `${archOpen ? '▾' : '▸'} Archived (${archivedH.length})`;
+    });
+
+    archivedH.forEach(h => {
+      const sec = document.createElement('div'); sec.className = 'horizon-section horizon-archived';
+      const head = document.createElement('div'); head.className = 'horizon-head';
+      const nameEl = document.createElement('div'); nameEl.className = 'horizon-name-edit horizon-archived-name';
+      nameEl.textContent = h.name;
+      const arcMoreBtn = document.createElement('button'); arcMoreBtn.className = 'section-more-btn'; arcMoreBtn.title = 'More'; arcMoreBtn.textContent = '⋯';
+      arcMoreBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        openSectionMenu([
+          { label: 'Unarchive', fn: () => { h.archived = false; saveToStorage(); renderHorizons(); } },
+          { label: 'Delete', danger: true, fn: () => { horizons.splice(horizons.indexOf(h), 1); saveToStorage(); renderHorizons(); } }
+        ], arcMoreBtn);
+      });
+      head.append(nameEl, arcMoreBtn);
+
+      const itemsList = document.createElement('div'); itemsList.className = 'h-items-list';
+      (h.items || []).forEach(item => {
+        const row = document.createElement('div'); row.className = 'h-item-row' + (item.notes ? ' h-item-has-notes' : '');
+        const bullet = document.createElement('span'); bullet.className = 'h-item-bullet';
+        const textEl = document.createElement('span'); textEl.className = 'h-item-text'; textEl.textContent = item.text || '';
+        row.append(bullet, textEl);
+        itemsList.appendChild(row);
+      });
+
+      sec.append(head, itemsList);
+      archList.appendChild(sec);
+    });
+
+    archWrap.append(archToggle, archList);
+    panel.appendChild(archWrap);
+  }
 
 }
 
