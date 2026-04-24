@@ -328,7 +328,7 @@ body {
 }
 @media (min-width: 600px) {
   body { padding: 16px 12px; background: #f5f5f7; }
-  .outer { border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 0 0 1px #e8e8ed; }
+  .outer { border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 0 0 1px #e8e8ed; overflow: hidden; }
 }
 
 /* ── Timeline panel ──────────────────────────────────────────────── */
@@ -846,38 +846,50 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
 /* .btn-add-group uses .btn-icon styles — kept for JS references only */
 
 /* ── Sort bar (dropdown) ──────────────────────────────────────────── */
-.sort-bar {
-  display: none;
+.sort-bar { display: none; }
+.settings-sort-select {
+  border: 1px solid #e0e0e8; background: transparent; color: #3f3f46;
+  padding: 3px 20px 3px 8px; border-radius: 6px;
+  font-family: inherit; font-size: 12px; font-weight: 500;
+  cursor: pointer; outline: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center;
+  transition: border-color .12s;
 }
-/* ── Compact-mode toggle (desktop schedule tab) ───────────────────── */
-@media (hover: hover) {
-  .sort-bar {
-    display: flex; align-items: center; gap: 6px;
-    padding: 3px 8px 3px; flex-shrink: 0;
-  }
-  .compact-toggle-btn {
-    margin-left: auto; border: none; background: transparent; font-family: inherit;
-    font-size: 15px; line-height: 1; color: #c0c0cc; cursor: pointer;
-    padding: 2px 5px; border-radius: 5px; transition: color .1s;
-  }
-  .compact-toggle-btn:hover { color: var(--accent); }
-  .compact-toggle-btn.active { color: var(--accent); }
-  body.dark .compact-toggle-btn { color: #3c3c4c; }
-  body.dark .compact-toggle-btn:hover { color: var(--accent); }
-  body.dark .compact-toggle-btn.active { color: var(--accent); }
+.settings-sort-select:hover { border-color: #c0c0cc; }
+body.dark .settings-sort-select { background-color: #26262e; border-color: #36363e; color: #c0c0d0; }
+/* ── Task row: hide all inline extras; show only time badge + ⋯ ─── */
+.task-row .evt-toggle,
+.task-row .notes-btn,
+.task-row .move-btn,
+.task-row .repeat-btn,
+.task-row .repeat-badge,
+.task-row .date-btn,
+.task-row .task-del,
+.task-row .sched-btn { display: none; }
+/* ⋯ menu always visible */
+.task-row .task-menu-btn { opacity: 1 !important; }
 
-  #tasklist.compact .evt-toggle,
-  #tasklist.compact .notes-btn,
-  #tasklist.compact .move-btn,
-  #tasklist.compact .repeat-btn,
-  #tasklist.compact .repeat-badge,
-  #tasklist.compact .date-btn,
-  #tasklist.compact .task-del,
-  #tasklist.compact .task-menu-btn,
-  #tasklist.compact .sched-btn,
-  #tasklist.compact .time-badge-x,
-  #tasklist.compact .drag-handle { display: none !important; }
+/* ── Pill design for project/folder task rows ─────────────────────── */
+.ptask-row {
+  background: #f8f8fb; border: 1px solid #e8e8ed; border-radius: 7px;
+  margin: 2px 8px 2px 0;
+  padding-top: 2px; padding-bottom: 2px; padding-right: 6px;
+  transition: background .1s, border-color .1s;
 }
+.ptask-row:hover { background: #f0f0f5; border-color: #d8d8e4; }
+body.dark .ptask-row { background: #1a1a22; border-color: #2a2a36; }
+body.dark .ptask-row:hover { background: #20202c; border-color: #363648; }
+
+.ftask-row:not(.is-group) {
+  background: #f8f8fb; border: 1px solid #e8e8ed; border-radius: 7px;
+  margin: 2px 8px 2px 0;
+  padding-top: 2px; padding-bottom: 2px; padding-right: 6px;
+  transition: background .1s, border-color .1s;
+}
+.ftask-row:not(.is-group):hover { background: #f0f0f5; border-color: #d8d8e4; }
+body.dark .ftask-row:not(.is-group) { background: #1a1a22; border-color: #2a2a36; }
+body.dark .ftask-row:not(.is-group):hover { background: #20202c; border-color: #363648; }
 .sort-label {
   font-size: 9.5px; font-weight: 600; color: #d0d0d8;
   letter-spacing: .3px;
@@ -2140,7 +2152,6 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
               <option value="name">A – Z</option>
               <option value="status">Status</option>
             </select>
-            <button id="btn-compact-toggle" class="compact-toggle-btn" title="Compact view (show times only)">☰</button>
           </div>
           <div class="tasklist" id="tasklist"></div>
         </div>
@@ -2231,6 +2242,16 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
       <input type="checkbox" id="toggle-hide-done" checked />
       <span class="toggle-track"></span>
     </label>
+  </div>
+  <div class="settings-item">
+    <span class="settings-item-label">Sort tasks by</span>
+    <select class="settings-sort-select" id="settings-sort-select">
+      <option value="manual">Manual</option>
+      <option value="time" selected>Time</option>
+      <option value="date">Date</option>
+      <option value="name">A – Z</option>
+      <option value="status">Status</option>
+    </select>
   </div>
   <div class="settings-item" id="settings-text-size">
     <span class="settings-item-label">Text size</span>
@@ -2968,8 +2989,9 @@ function renderTasks() {
         });
       }
       const txt=document.createElement('div');
-      txt.className='pill-text'; txt.contentEditable='true';
-      txt.spellcheck=false; txt.textContent=task.text;
+      txt.className='pill-text'; txt.contentEditable='false';
+      txt.spellcheck=false; txt.textContent=task.text; txt.style.cursor='text';
+      txt.addEventListener('click', () => { if(txt.contentEditable==='false'){txt.contentEditable='true'; txt.focus(); placeCaretAtEnd(txt);} });
       const capturedPrevH = prevRenderedTask;
       txt.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); txt.blur(); }
@@ -2981,7 +3003,7 @@ function renderTasks() {
           setTimeout(() => { const el=$(`.pill[data-id="${task.id}"] .pill-text`); if(el){el.focus();placeCaretAtEnd(el);} }, 30);
         }
       });
-      txt.addEventListener('blur',()=>{const v=txt.textContent.trim();if(v){task.text=v;saveToStorage();}});
+      txt.addEventListener('blur',()=>{txt.contentEditable='false';const v=txt.textContent.trim();if(v){task.text=v;saveToStorage();}});
       const del=document.createElement('i'); del.className='header-del'; del.textContent='×';
       del.addEventListener('click', e => {
         e.stopPropagation();
@@ -3016,8 +3038,10 @@ function renderTasks() {
       }
 
       const txt=document.createElement('div');
-      txt.className='pill-text'; txt.contentEditable='true';
+      txt.className='pill-text'; txt.contentEditable='false';
       txt.spellcheck=false; txt.textContent=task.text;
+      txt.style.cursor='text';
+      txt.addEventListener('click', () => { if(txt.contentEditable==='false'){txt.contentEditable='true'; txt.focus(); placeCaretAtEnd(txt);} });
       const capturedPrevT = prevRenderedTask;
       txt.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
@@ -3037,7 +3061,7 @@ function renderTasks() {
           setTimeout(() => { const el=$(`.pill[data-id="${task.id}"] .pill-text`); if(el){el.focus();placeCaretAtEnd(el);} }, 30);
         }
       });
-      txt.addEventListener('blur',()=>{const v=txt.textContent.trim();if(v!==undefined){task.text=v||task.text;saveToStorage();}});
+      txt.addEventListener('blur',()=>{txt.contentEditable='false';const v=txt.textContent.trim();if(v!==undefined){task.text=v||task.text;saveToStorage();}});
 
       // Event toggle button (visible on row hover)
       const evtBtn=document.createElement('button'); evtBtn.className='evt-toggle'+(task.isEvent?' on':'');
@@ -4028,6 +4052,7 @@ function applySort(type) {
 function sortAndApply(type) {
   currentSort = type;
   const sel = $('#sort-select'); if (sel) sel.value = type;
+  const ssel = $('#settings-sort-select'); if (ssel) ssel.value = type;
   applySort(type);
   rerender();
 }
@@ -4369,11 +4394,14 @@ let _qaSelectedId = null;
 function openQuickAddModal(type) {
   _qaType = type;
   _qaSelectedId = null;
-  $('#qa-title').textContent = type === 'projects' ? 'Add Task to Project' : 'Add Task to Folder';
+  const titles = { projects: 'Add Task to Project', folders: 'Add Task to Folder', horizons: 'Add Item to Horizon' };
+  $('#qa-title').textContent = titles[type] || 'Add Task';
   $('#qa-text').value = '';
   const picker = $('#qa-picker');
   picker.innerHTML = '';
-  const list = type === 'projects' ? projects.filter(p => !p.inactive) : folders;
+  const list = type === 'projects' ? projects.filter(p => !p.inactive)
+             : type === 'folders'  ? folders
+             : horizons;
   if (list.length === 0) {
     picker.innerHTML = `<div style="color:#999;font-size:13px">No ${type} yet.</div>`;
   } else {
@@ -4402,12 +4430,16 @@ function _submitQuickAdd() {
     proj.tasks.push({ id: ++pUid, text, done: false, indent: 0, notes: '' });
     saveToStorage(); renderProjects();
     if (!text) setTimeout(() => { const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
-  } else {
+  } else if (_qaType === 'folders') {
     const folder = folders.find(f => f.id === _qaSelectedId); if (!folder) return;
     folder.collapsed = false;
     tasks.push({ id: ++uid, text, isHeader: false, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
     saveToStorage(); renderFolders();
     if (!text) setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
+  } else if (_qaType === 'horizons') {
+    const h = horizons.find(h => h.id === _qaSelectedId); if (!h) return;
+    h.items.push({ id: hItemUid++, text, notes: '' });
+    saveToStorage(); renderHorizons();
   }
 }
 $('#qa-cancel').addEventListener('click', closeQuickAddModal);
@@ -4437,7 +4469,7 @@ $('#fab-add').addEventListener('click', e => {
   if (currentTab === 'horizons') {
     showFabMenu([
       { label: 'New horizon', fn: _addHorizonSection },
-      { label: 'Add item', fn: _addItemToLastHorizon },
+      { label: 'Add item', fn: () => openQuickAddModal('horizons') },
     ]);
     return;
   }
@@ -4565,10 +4597,9 @@ $('#tl-panel').addEventListener('wheel', e => {
   applyZoom(ppm * (e.deltaY < 0 ? 1.04 : 1/1.04), e.clientY);
 }, { passive: false });
 $('#sort-select').addEventListener('change', e => sortAndApply(e.target.value));
-$('#btn-compact-toggle')?.addEventListener('click', () => {
-  const list = $('#tasklist'), btn = $('#btn-compact-toggle');
-  list.classList.toggle('compact');
-  btn.classList.toggle('active', list.classList.contains('compact'));
+$('#settings-sort-select').addEventListener('change', e => {
+  sortAndApply(e.target.value);
+  const old = $('#sort-select'); if (old) old.value = e.target.value;
 });
 $('#btn-wire')?.addEventListener('click', () => {
   wiresVisible = !wiresVisible;
@@ -4633,9 +4664,11 @@ function openTaskMenu(task, anchorEl) {
   const items = [];
   if (!task.isHeader) {
     items.push({ label: task.sched?.t ? 'Edit schedule' : 'Set time', fn: () => openSchedModal(task) });
+    if (task.sched?.t) items.push({ label: 'Remove time', fn: () => unscheduleTask(task) });
+    items.push({ label: task.sched?.date ? 'Change date' : 'Set date', fn: () => { datePanelTarget = task; openDatePanel(anchorEl); } });
     items.push({ label: task.notes ? 'Edit notes' : 'Add notes', fn: () => openNotesModal(task, () => rerender()) });
     items.push({ label: task.repeat ? 'Edit repeat' : 'Set repeat', fn: () => openRepeatModal(task) });
-    if (task.sched?.t) items.push({ label: 'Remove time', fn: () => unscheduleTask(task) });
+    items.push({ label: task.isEvent ? 'Convert to task' : 'Convert to event', fn: () => { task.isEvent = !task.isEvent; saveToStorage(); rerender(); } });
     items.push({ label: 'Move to…', fn: () => showMovePicker(anchorEl, proj => moveTaskToProject(task, proj), folder => moveTaskToFolder(task, folder)) });
   }
   items.push({ label: 'Delete', fn: () => {
