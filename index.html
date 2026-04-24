@@ -822,8 +822,8 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
 }
 .task-row.is-header .pill:hover { background: rgba(0,0,0,.02); border-color: transparent !important; }
 .task-row.is-header .pill-text {
-  font-size: 9.5px; font-weight: 700; color: #707080;
-  letter-spacing: .6px; text-transform: uppercase;
+  font-size: var(--fs-label); font-weight: 700; color: #707080;
+  letter-spacing: .4px; text-transform: uppercase;
 }
 .task-row.is-header .header-icon {
   flex-shrink: 0; font-size: 8px; color: #c4c4cc; line-height: 1;
@@ -1578,7 +1578,7 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(var(--accent-rgb),.3); }
 
   /* ── Bigger fonts across the board ── */
   .time-badge { font-size: 11.5px; }
-  .task-row.is-header .pill-text { font-size: 13px !important; }
+  /* is-header pill-text inherits --fs-label via CSS variable */
   .view-toggle-btn { font-size: 13px; padding: 5px 10px; }
   .btn-icon, .btn-settings, .btn-overflow { font-size: 24px; }
 
@@ -1589,7 +1589,7 @@ body.ui-size-md #header-h1                     { font-size: 17px !important; }
 body.ui-size-md .date-nav-btn                  { font-size: 23px !important; }
 body.ui-size-md .tab-btn svg                   { width: 19px !important; height: 19px !important; }
 body.ui-size-md .btn-folder-drawer             { font-size: 18px !important; }
-body.ui-size-md .task-row.is-header .pill-text  { font-size: 14px !important; }
+/* is-header pill-text uses --fs-label variable */
 body.ui-size-md .time-badge                    { font-size: 12px !important; }
 body.ui-size-md .tl-label   { font-size: 11px !important; color: #686878 !important; }
 body.ui-size-md .view-toggle-btn               { font-size: 13px !important; }
@@ -1605,7 +1605,7 @@ body.ui-size-lg #header-h1                     { font-size: 19px !important; }
 body.ui-size-lg .date-nav-btn                  { font-size: 26px !important; }
 body.ui-size-lg .tab-btn svg                   { width: 22px !important; height: 22px !important; }
 body.ui-size-lg .btn-folder-drawer             { font-size: 21px !important; }
-body.ui-size-lg .task-row.is-header .pill-text  { font-size: 16px !important; }
+/* is-header pill-text uses --fs-label variable */
 body.ui-size-lg .time-badge                    { font-size: 14px !important; }
 body.ui-size-lg .tl-label   { font-size: 13px !important; color: #585868 !important; }
 body.ui-size-lg .view-toggle-btn               { font-size: 15px !important; }
