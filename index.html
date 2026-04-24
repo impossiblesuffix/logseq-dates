@@ -75,7 +75,7 @@ body {
   color: #c0c0cc; cursor: pointer; font-family: inherit; line-height: 1;
   transition: background .1s, color .1s;
 }
-.view-toggle-btn.active { background: #f0f0f5; color: var(--accent); }
+.view-toggle-btn.active { background: rgba(var(--accent-rgb),.1); color: var(--accent); }
 
 /* ── Week view ───────────────────────────────────────────────────── */
 #week-panel {
@@ -163,6 +163,7 @@ body {
 .bottom-tab-bar {
   display: flex; align-items: stretch; flex-shrink: 0;
   border-top: 1px solid rgba(0,0,0,.07);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 .btn-folder-drawer {
   flex: 0 0 auto; padding: 11px 14px; border: none; background: transparent;
@@ -526,7 +527,7 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
 .drag-handle {
   flex-shrink: 0; width: 13px; height: 26px; cursor: grab;
   display: grid; place-items: center;
-  color: #a8a8bc; font-size: 12px; opacity: 0;
+  color: rgba(var(--accent-rgb),.4); font-size: 12px; opacity: 0;
   transition: opacity .1s; user-select: none; touch-action: none;
 }
 .task-row:hover .drag-handle,
@@ -848,6 +849,35 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
 .sort-bar {
   display: none;
 }
+/* ── Compact-mode toggle (desktop schedule tab) ───────────────────── */
+@media (hover: hover) {
+  .sort-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 8px 3px; flex-shrink: 0;
+  }
+  .compact-toggle-btn {
+    margin-left: auto; border: none; background: transparent; font-family: inherit;
+    font-size: 15px; line-height: 1; color: #c0c0cc; cursor: pointer;
+    padding: 2px 5px; border-radius: 5px; transition: color .1s;
+  }
+  .compact-toggle-btn:hover { color: var(--accent); }
+  .compact-toggle-btn.active { color: var(--accent); }
+  body.dark .compact-toggle-btn { color: #3c3c4c; }
+  body.dark .compact-toggle-btn:hover { color: var(--accent); }
+  body.dark .compact-toggle-btn.active { color: var(--accent); }
+
+  #tasklist.compact .evt-toggle,
+  #tasklist.compact .notes-btn,
+  #tasklist.compact .move-btn,
+  #tasklist.compact .repeat-btn,
+  #tasklist.compact .repeat-badge,
+  #tasklist.compact .date-btn,
+  #tasklist.compact .task-del,
+  #tasklist.compact .task-menu-btn,
+  #tasklist.compact .sched-btn,
+  #tasklist.compact .time-badge-x,
+  #tasklist.compact .drag-handle { display: none !important; }
+}
 .sort-label {
   font-size: 9.5px; font-weight: 600; color: #d0d0d8;
   letter-spacing: .3px;
@@ -868,7 +898,7 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
 .tab-strip { display: none; }
 /* ── Tab icon buttons in bottom bar ──────────────────────────────── */
 .tab-btn {
-  flex: 1; padding: 9px 0; border: none; background: transparent;
+  flex: 1; padding: 10px 0 13px; border: none; background: transparent;
   display: flex; align-items: center; justify-content: center;
   color: #c4c4cc; cursor: pointer;
   border-top: 2px solid transparent;
@@ -1431,7 +1461,7 @@ body.dark .section-more-btn { color: #383848; }
 body.dark .section-more-btn:hover { color: #808090; }
 
 .section-menu {
-  position: absolute; z-index: 600; min-width: 130px;
+  position: fixed; z-index: 5000; min-width: 130px;
   background: #fff; border: 1px solid #e4e4ed; border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,.12);
   overflow: hidden; display: none;
@@ -1886,7 +1916,7 @@ body.dark .date-nav-btn { color: #484858; }
 body.dark .date-nav-btn:hover { color: #9090a0; background: rgba(255,255,255,.05); }
 body.dark .view-toggle { border-color: #2c2c38; }
 body.dark .view-toggle-btn { color: #424250; }
-body.dark .view-toggle-btn.active { background: #242438; color: #7c79f0; }
+body.dark .view-toggle-btn.active { background: rgba(var(--accent-rgb),.18); color: var(--accent); }
 /* timeline */
 body.dark .tl-spine { background: #30303c; }
 body.dark .tl-label { color: #484858; }
@@ -1901,7 +1931,7 @@ body.dark .pill-text { color: #d0d0d8; }
 body.dark .pill.done .pill-text { color: #404050; }
 body.dark .task-row.is-header .pill-text { color: #606072; }
 body.dark .task-row.is-header .pill:hover { background: rgba(255,255,255,.02); }
-body.dark .drag-handle { color: #6868a0; }
+body.dark .drag-handle { color: rgba(var(--accent-rgb),.45); }
 body.dark .task-del, body.dark .header-del { color: #303040; }
 body.dark .pill-chk { border-color: #383848; }
 body.dark .pill-chk:hover { border-color: #7c79f0; }
@@ -2110,6 +2140,7 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
               <option value="name">A – Z</option>
               <option value="status">Status</option>
             </select>
+            <button id="btn-compact-toggle" class="compact-toggle-btn" title="Compact view (show times only)">☰</button>
           </div>
           <div class="tasklist" id="tasklist"></div>
         </div>
@@ -4234,7 +4265,7 @@ $('#btn-add-group')?.addEventListener('click', addHeader);
 /* ── Section head ⋯ overflow menu ───────────────────────────────── */
 let _sectionMenuEl = null;
 function closeSectionMenu() {
-  if (_sectionMenuEl) { _sectionMenuEl.classList.remove('open'); _sectionMenuEl = null; }
+  if (_sectionMenuEl) { _sectionMenuEl.remove(); _sectionMenuEl = null; }
   document.removeEventListener('pointerdown', _sectionMenuOutside, true);
 }
 function _sectionMenuOutside(e) {
@@ -4250,8 +4281,11 @@ function openSectionMenu(items, anchorEl) {
     btn.addEventListener('pointerdown', e => { e.stopPropagation(); closeSectionMenu(); fn(); });
     menu.appendChild(btn);
   });
-  anchorEl.style.position = 'relative';
-  anchorEl.appendChild(menu);
+  // Append to body with fixed position to avoid overflow:hidden clipping in panels
+  const r = anchorEl.getBoundingClientRect();
+  menu.style.top = (r.bottom + 4) + 'px';
+  menu.style.right = (window.innerWidth - r.right) + 'px';
+  document.body.appendChild(menu);
   _sectionMenuEl = menu;
   setTimeout(() => document.addEventListener('pointerdown', _sectionMenuOutside, true), 50);
 }
@@ -4400,7 +4434,13 @@ $('#fab-add').addEventListener('click', e => {
     }
     return;
   }
-  if (currentTab === 'horizons') { _addHorizonSection(); return; }
+  if (currentTab === 'horizons') {
+    showFabMenu([
+      { label: 'New horizon', fn: _addHorizonSection },
+      { label: 'Add item', fn: _addItemToLastHorizon },
+    ]);
+    return;
+  }
 });
 $('#btn-overflow')?.addEventListener('click', () => {
   $('#header-overflow-panel')?.classList.toggle('open');
@@ -4525,6 +4565,11 @@ $('#tl-panel').addEventListener('wheel', e => {
   applyZoom(ppm * (e.deltaY < 0 ? 1.04 : 1/1.04), e.clientY);
 }, { passive: false });
 $('#sort-select').addEventListener('change', e => sortAndApply(e.target.value));
+$('#btn-compact-toggle')?.addEventListener('click', () => {
+  const list = $('#tasklist'), btn = $('#btn-compact-toggle');
+  list.classList.toggle('compact');
+  btn.classList.toggle('active', list.classList.contains('compact'));
+});
 $('#btn-wire')?.addEventListener('click', () => {
   wiresVisible = !wiresVisible;
   if ($('#btn-wire')) $('#btn-wire').textContent = wiresVisible ? 'Hide connections' : 'Show connections';
