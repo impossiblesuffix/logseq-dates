@@ -923,7 +923,6 @@ body.tab-projects #btn-add-group { display: none; }
   flex-shrink: 0; font-size: 16px; color: #9898a8; cursor: pointer;
   width: 20px; text-align: center; user-select: none; line-height: 1;
 }
-.folder-icon { flex-shrink: 0; font-size: 12px; color: #c0b870; line-height: 1; }
 .folder-name {
   flex: 1; font-size: var(--fs-task); font-weight: 700; color: #52525b;
   letter-spacing: .1px; outline: none; cursor: text;
@@ -1421,6 +1420,69 @@ body.dark .section-add-btn:hover { color: var(--accent); }
   .section-add-btn { opacity: 1; }
 }
 
+/* ── Section head ⋯ overflow menu ────────────────────────────────── */
+.section-more-btn {
+  flex-shrink: 0; border: none; background: transparent; font-family: inherit;
+  font-size: 16px; line-height: 1; color: #b0b0bc; cursor: pointer; padding: 0 4px;
+  transition: color .1s;
+}
+.section-more-btn:hover { color: #52525b; }
+body.dark .section-more-btn { color: #383848; }
+body.dark .section-more-btn:hover { color: #808090; }
+
+.section-menu {
+  position: absolute; z-index: 600; min-width: 130px;
+  background: #fff; border: 1px solid #e4e4ed; border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  overflow: hidden; display: none;
+}
+.section-menu.open { display: block; }
+.section-menu-item {
+  display: block; width: 100%; text-align: left; border: none; background: none;
+  font-family: inherit; font-size: 13px; color: #3a3a44;
+  padding: 9px 14px; cursor: pointer; white-space: nowrap;
+}
+.section-menu-item:hover { background: #f4f4f8; }
+.section-menu-item.danger { color: #e53e3e; }
+.section-menu-item.danger:hover { background: #fff5f5; }
+body.dark .section-menu { background: #1e1e28; border-color: #2e2e3c; }
+body.dark .section-menu-item { color: #c0c0d0; }
+body.dark .section-menu-item:hover { background: #28283a; }
+body.dark .section-menu-item.danger { color: #fc8181; }
+body.dark .section-menu-item.danger:hover { background: #2d1f1f; }
+
+/* ── Task rows hover-to-reveal (desktop only) ────────────────────── */
+@media (hover: hover) {
+  .ptask-row .drag-handle,
+  .ftask-row .drag-handle  { opacity: 0; transition: opacity .1s; }
+  .ptask-row:hover .drag-handle,
+  .ftask-row:hover .drag-handle { opacity: 1; }
+
+  .ptask-row .task-menu-btn,
+  .ftask-row .task-menu-btn  { opacity: 0; transition: opacity .1s; }
+  .ptask-row:hover .task-menu-btn,
+  .ftask-row:hover .task-menu-btn { opacity: 1; }
+}
+@media (hover: none) {
+  .ptask-row .drag-handle,
+  .ftask-row .drag-handle,
+  .ptask-row .task-menu-btn,
+  .ftask-row .task-menu-btn { opacity: 1; }
+}
+
+/* ── Quick-add modal picker items ────────────────────────────────── */
+.qa-pick-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 7px; cursor: pointer;
+  font-size: 14px; color: #3a3a44; border: 1.5px solid transparent;
+  transition: background .1s, border-color .1s;
+}
+.qa-pick-item:hover { background: #f4f4f8; }
+.qa-pick-item.selected { border-color: var(--accent); background: rgba(var(--accent-rgb),.07); }
+body.dark .qa-pick-item { color: #c0c0d0; }
+body.dark .qa-pick-item:hover { background: #23232f; }
+body.dark .qa-pick-item.selected { background: rgba(var(--accent-rgb),.12); }
+
 /* ── Add Task modal ──────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 10000;
@@ -1911,7 +1973,6 @@ body.dark .proj-subnav-btn:not(.active):hover { background: #26262e; color: #a0a
 body.dark .folder-name { color: #808090; }
 body.dark .folder-chevron { color: #484858; }
 body.dark .folder-del { color: #404050; }
-body.dark .folder-icon { color: #8a7c40; }
 body.dark .ftask-group-text { color: #484858; }
 body.dark .ftask-sched-badge { background: rgba(124,121,240,.15); color: #7c79f0; }
 body.dark .btn-new-folder { color: #383848; }
@@ -2337,6 +2398,22 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
     <div class="modal-actions">
       <button class="modal-btn" id="modal-cancel">Cancel</button>
       <button class="modal-btn primary" id="modal-ok">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick-add modal ─────────────────────────────────────────────────── -->
+<div id="quick-add-modal" class="modal-overlay" style="display:none">
+  <div class="modal-card" style="width:320px;gap:0">
+    <div style="font-weight:700;font-size:15px;margin-bottom:12px" id="qa-title">Add Task</div>
+    <input id="qa-text" type="text" placeholder="Task name…"
+      style="width:100%;box-sizing:border-box;border:1px solid #e0e0e8;border-radius:8px;
+             padding:9px 12px;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px">
+    <div style="font-size:12px;font-weight:600;color:#888;margin-bottom:6px;letter-spacing:.05em">ADD TO</div>
+    <div id="qa-picker" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="qa-cancel" class="btn-secondary" style="padding:7px 14px">Cancel</button>
+      <button id="qa-confirm" class="btn-primary" style="padding:7px 18px">Add</button>
     </div>
   </div>
 </div>
@@ -3943,9 +4020,12 @@ let _sbSaveTimer = null;
 let _lastSavedAt = 0;   // timestamp of last successful Supabase write (or load)
 let _realtimeChannel = null;
 let _dataLoaded = false; // true once we've confirmed data was loaded (or confirmed new user)
+let _editingActive = false;  // true while a task text field is focused
+let _pendingRerender = false; // deferred rerender requested while editing
 
 function saveToStorage() {
   const now = Date.now();
+  _lastSavedAt = now; // set immediately so realtime echo is ignored
   const payload = { tasks, uid, hideCompleted, tlStart, tlEnd, projects, pUid, horizons, hUid, hItemUid, folders, fUid, savedAt: now };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e) {}
   if (!_dataLoaded) return; // don't overwrite Supabase if we couldn't confirm load
@@ -3958,7 +4038,6 @@ function saveToStorage() {
       { onConflict: 'id' }
     );
     if (error) console.error('Supabase save failed:', error);
-    else _lastSavedAt = now;
   }, 1500);
 }
 
@@ -4023,7 +4102,8 @@ function setupRealtime(userId) {
         if (remote.savedAt && remote.savedAt <= _lastSavedAt) return;
         applyStorageData(remote);
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch(e) {}
-        rerender();
+        if (_editingActive) { _pendingRerender = true; }
+        else { rerender(); }
       })
     .subscribe();
 }
@@ -4151,6 +4231,31 @@ function populateTimeSelects() {
 
 $('#btn-add')?.addEventListener('click', addTask);
 $('#btn-add-group')?.addEventListener('click', addHeader);
+/* ── Section head ⋯ overflow menu ───────────────────────────────── */
+let _sectionMenuEl = null;
+function closeSectionMenu() {
+  if (_sectionMenuEl) { _sectionMenuEl.classList.remove('open'); _sectionMenuEl = null; }
+  document.removeEventListener('pointerdown', _sectionMenuOutside, true);
+}
+function _sectionMenuOutside(e) {
+  if (_sectionMenuEl && !_sectionMenuEl.contains(e.target)) closeSectionMenu();
+}
+function openSectionMenu(items, anchorEl) {
+  closeSectionMenu();
+  const menu = document.createElement('div'); menu.className = 'section-menu open';
+  items.forEach(({ label, fn, danger }) => {
+    const btn = document.createElement('button');
+    btn.className = 'section-menu-item' + (danger ? ' danger' : '');
+    btn.textContent = label;
+    btn.addEventListener('pointerdown', e => { e.stopPropagation(); closeSectionMenu(); fn(); });
+    menu.appendChild(btn);
+  });
+  anchorEl.style.position = 'relative';
+  anchorEl.appendChild(menu);
+  _sectionMenuEl = menu;
+  setTimeout(() => document.addEventListener('pointerdown', _sectionMenuOutside, true), 50);
+}
+
 /* ── FAB mini-menu ───────────────────────────────────────────── */
 let _fabMenuOpen = false;
 function closeFabMenu() {
@@ -4223,14 +4328,76 @@ function _addItemToLastHorizon() {
   setTimeout(() => { const all = $$('.h-item-text'); const l = all[all.length-1]; if(l) l.focus(); }, 30);
 }
 
+/* ── Quick-add modal ─────────────────────────────────────────────── */
+let _qaType = 'projects';
+let _qaSelectedId = null;
+
+function openQuickAddModal(type) {
+  _qaType = type;
+  _qaSelectedId = null;
+  $('#qa-title').textContent = type === 'projects' ? 'Add Task to Project' : 'Add Task to Folder';
+  $('#qa-text').value = '';
+  const picker = $('#qa-picker');
+  picker.innerHTML = '';
+  const list = type === 'projects' ? projects.filter(p => !p.inactive) : folders;
+  if (list.length === 0) {
+    picker.innerHTML = `<div style="color:#999;font-size:13px">No ${type} yet.</div>`;
+  } else {
+    list.forEach((item, i) => {
+      const row = document.createElement('div'); row.className = 'qa-pick-item';
+      row.textContent = item.name; row.dataset.id = item.id;
+      row.addEventListener('click', () => {
+        $$('.qa-pick-item').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected'); _qaSelectedId = item.id;
+      });
+      picker.appendChild(row);
+      if (i === 0) { row.classList.add('selected'); _qaSelectedId = item.id; }
+    });
+  }
+  $('#quick-add-modal').style.display = 'flex';
+  setTimeout(() => $('#qa-text').focus(), 50);
+}
+function closeQuickAddModal() { $('#quick-add-modal').style.display = 'none'; }
+function _submitQuickAdd() {
+  const text = $('#qa-text').value.trim();
+  closeQuickAddModal();
+  if (!_qaSelectedId) return;
+  if (_qaType === 'projects') {
+    const proj = projects.find(p => p.id === _qaSelectedId); if (!proj) return;
+    proj.collapsed = false;
+    proj.tasks.push({ id: ++pUid, text, done: false, indent: 0, notes: '' });
+    saveToStorage(); renderProjects();
+    if (!text) setTimeout(() => { const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
+  } else {
+    const folder = folders.find(f => f.id === _qaSelectedId); if (!folder) return;
+    folder.collapsed = false;
+    tasks.push({ id: ++uid, text, isHeader: false, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
+    saveToStorage(); renderFolders();
+    if (!text) setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
+  }
+}
+$('#qa-cancel').addEventListener('click', closeQuickAddModal);
+$('#qa-confirm').addEventListener('click', _submitQuickAdd);
+$('#qa-text').addEventListener('keydown', e => { if (e.key === 'Enter') _submitQuickAdd(); if (e.key === 'Escape') closeQuickAddModal(); });
+$('#quick-add-modal').addEventListener('mousedown', e => { if (e.target === $('#quick-add-modal')) closeQuickAddModal(); });
+
 $('#fab-add').addEventListener('click', e => {
   e.stopPropagation();
   if (_fabMenuOpen) { closeFabMenu(); return; }
   if (currentTab === 'schedule') { openAddModal(); return; }
   if (currentTab === 'repeaters') { addNewRepeater(); return; }
   if (currentTab === 'projects') {
-    if (projSubTab === 'projects') _addProject();
-    else _addFolder();
+    if (projSubTab === 'projects') {
+      showFabMenu([
+        { label: 'New project', fn: _addProject },
+        { label: 'Add task', fn: () => openQuickAddModal('projects') },
+      ]);
+    } else {
+      showFabMenu([
+        { label: 'New folder', fn: _addFolder },
+        { label: 'Add task', fn: () => openQuickAddModal('folders') },
+      ]);
+    }
     return;
   }
   if (currentTab === 'horizons') { _addHorizonSection(); return; }
@@ -5005,22 +5172,11 @@ function renderFolders(container) {
     const chev = document.createElement('span'); chev.className = 'folder-chevron';
     chev.textContent = folder.collapsed ? '▸' : '▾';
     chev.addEventListener('click', () => { folder.collapsed = !folder.collapsed; saveToStorage(); renderFolders(); });
-    const icon = document.createElement('span'); icon.className = 'folder-icon'; icon.textContent = '▤';
     const nameEl = document.createElement('div');
     nameEl.className = 'folder-name'; nameEl.contentEditable = 'true'; nameEl.spellcheck = false;
     nameEl.textContent = folder.name;
     nameEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); } });
     nameEl.addEventListener('blur', () => { const v = nameEl.textContent.trim(); if (v) { folder.name = v; saveToStorage(); } });
-    const delBtn = document.createElement('button'); delBtn.className = 'folder-del'; delBtn.textContent = '×';
-    delBtn.title = 'Delete folder';
-    delBtn.addEventListener('click', () => {
-      const count = tasks.filter(t => t.folderId === folder.id).length;
-      if (count === 0 || confirm(`Delete "${folder.name}" and its ${count} task(s)?`)) {
-        tasks = tasks.filter(t => t.folderId !== folder.id);
-        folders = folders.filter(f => f.id !== folder.id);
-        saveToStorage(); renderFolders();
-      }
-    });
     const addBtn = document.createElement('button');
     addBtn.className = 'section-add-btn'; addBtn.title = 'Add task'; addBtn.textContent = '+';
     addBtn.addEventListener('click', e => {
@@ -5033,7 +5189,22 @@ function renderFolders(container) {
         const l = rows[rows.length - 1]; if (l) l.focus();
       }, 30);
     });
-    head.append(chev, icon, nameEl, addBtn, delBtn);
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'section-more-btn'; moreBtn.title = 'More'; moreBtn.textContent = '⋯';
+    moreBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openSectionMenu([
+        { label: 'Delete', danger: true, fn: () => {
+          const count = tasks.filter(t => t.folderId === folder.id).length;
+          if (count === 0 || confirm(`Delete "${folder.name}" and its ${count} task(s)?`)) {
+            tasks = tasks.filter(t => t.folderId !== folder.id);
+            folders = folders.filter(f => f.id !== folder.id);
+            saveToStorage(); renderFolders();
+          }
+        }}
+      ], moreBtn);
+    });
+    head.append(chev, nameEl, addBtn, moreBtn);
     block.appendChild(head);
 
     if (!folder.collapsed) {
@@ -5062,7 +5233,8 @@ function renderFolders(container) {
           const txt = document.createElement('div'); txt.className = 'ptask-text' + (ft.done ? ' done' : '');
           txt.contentEditable = 'true'; txt.spellcheck = false; txt.textContent = ft.text;
           txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
-          txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); });
+          txt.addEventListener('focus', () => { _editingActive = true; });
+          txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
           row.appendChild(ftHandle);
 
           // Schedule badge or button
@@ -5126,26 +5298,6 @@ function makeProjectBlock(proj) {
   nameEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); } });
   nameEl.addEventListener('blur', () => { const v = nameEl.textContent.trim(); if (v) { proj.name = v; saveToStorage(); } });
 
-  // Pause / resume button
-  const pauseBtn = document.createElement('button');
-  pauseBtn.className = 'project-pause';
-  pauseBtn.title = proj.inactive ? 'Make active' : 'Make inactive';
-  pauseBtn.innerHTML = proj.inactive
-    ? `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`
-    : `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
-  pauseBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    proj.inactive = !proj.inactive;
-    saveToStorage(); renderProjects();
-  });
-
-  const delProj = document.createElement('button'); delProj.className = 'project-del'; delProj.textContent = '×';
-  delProj.title = 'Delete project';
-  delProj.addEventListener('click', () => {
-    if (proj.tasks.length === 0 || confirm(`Delete "${proj.name}" and all its tasks?`)) {
-      projects = projects.filter(p => p.id !== proj.id); saveToStorage(); renderProjects();
-    }
-  });
   const addBtn = document.createElement('button');
   addBtn.className = 'section-add-btn'; addBtn.title = 'Add task'; addBtn.textContent = '+';
   addBtn.addEventListener('click', e => {
@@ -5158,7 +5310,20 @@ function makeProjectBlock(proj) {
       const l = rows[rows.length - 1]; if (l) l.focus();
     }, 40);
   });
-  head.append(chev, nameEl, pauseBtn, addBtn, delProj);
+  const moreBtn = document.createElement('button');
+  moreBtn.className = 'section-more-btn'; moreBtn.title = 'More'; moreBtn.textContent = '⋯';
+  moreBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openSectionMenu([
+      { label: proj.inactive ? 'Resume' : 'Pause', fn: () => { proj.inactive = !proj.inactive; saveToStorage(); renderProjects(); } },
+      { label: 'Delete', danger: true, fn: () => {
+        if (proj.tasks.length === 0 || confirm(`Delete "${proj.name}" and all its tasks?`)) {
+          projects = projects.filter(p => p.id !== proj.id); saveToStorage(); renderProjects();
+        }
+      }}
+    ], moreBtn);
+  });
+  head.append(chev, nameEl, addBtn, moreBtn);
   block.appendChild(head);
   return block;
 }
@@ -5222,7 +5387,8 @@ function renderProjects() {
           }
           if (e.key === 'Escape') txt.blur();
         });
-        txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); });
+        txt.addEventListener('focus', () => { _editingActive = true; });
+        txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
         const ptHandle = document.createElement('div');
         ptHandle.className = 'drag-handle'; ptHandle.innerHTML = '⠿';
         setupProjectTaskDrag(ptHandle, row, proj, pt);
@@ -5475,12 +5641,6 @@ function renderHorizons() {
       section.draggable = true;
       const v = nameEl.textContent.trim(); if (v) { h.name = v; saveToStorage(); }
     });
-    // Delete button
-    const delBtn = document.createElement('button'); delBtn.className = 'horizon-del-btn';
-    delBtn.textContent = '×'; delBtn.title = 'Delete this horizon';
-    delBtn.addEventListener('click', () => {
-      horizons.splice(i, 1); saveToStorage(); renderHorizons();
-    });
     const addBtn = document.createElement('button');
     addBtn.className = 'section-add-btn'; addBtn.title = 'Add item'; addBtn.textContent = '+';
     addBtn.addEventListener('click', e => {
@@ -5489,7 +5649,15 @@ function renderHorizons() {
       saveToStorage(); renderItems();
       setTimeout(() => { const all = $$('.h-item-text'); const l = all[all.length - 1]; if (l) l.focus(); }, 30);
     });
-    head.append(handle, nameEl, addBtn, delBtn);
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'section-more-btn'; moreBtn.title = 'More'; moreBtn.textContent = '⋯';
+    moreBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openSectionMenu([
+        { label: 'Delete', danger: true, fn: () => { horizons.splice(i, 1); saveToStorage(); renderHorizons(); } }
+      ], moreBtn);
+    });
+    head.append(handle, nameEl, addBtn, moreBtn);
 
     // Bullet list of items
     if (!Array.isArray(h.items)) h.items = [];
