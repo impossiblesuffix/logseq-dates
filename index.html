@@ -4191,6 +4191,7 @@ function openTaskMenu(task, anchorEl) {
     items.push({ label: task.notes ? 'Edit notes' : 'Add notes', fn: () => openNotesModal(task, () => rerender()) });
     items.push({ label: task.repeat ? 'Edit repeat' : 'Set repeat', fn: () => openRepeatModal(task) });
     if (task.sched?.t) items.push({ label: 'Remove time', fn: () => unscheduleTask(task) });
+    items.push({ label: 'Move to…', fn: () => showMovePicker(anchorEl, proj => moveTaskToProject(task, proj), folder => moveTaskToFolder(task, folder)) });
   }
   items.push({ label: 'Delete', fn: () => {
     const sub = getSubtree(task);
