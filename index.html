@@ -333,7 +333,7 @@ body {
 
 /* ── Timeline panel ──────────────────────────────────────────────── */
 .tl-panel {
-  width: 58px;
+  width: 44px;
   flex-shrink: 0;
   background: transparent;
   position: relative;
@@ -356,41 +356,42 @@ body.dark .tl-zoom-btn { color: #6060a0; }
 body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0; }
 .tl-spine {
   position: absolute; top: 0; bottom: 0;
-  left: 27px; width: 1px; background: #d0d0da;
+  left: 5px; width: 1px; background: #d0d0da;
 }
 @keyframes now-pulse {
   0%,100% { opacity: 1; }
   50%      { opacity: .45; }
 }
 .tl-now-dot {
-  position: absolute; left: 27px;
+  position: absolute; left: 5px;
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent); border: 2px solid #fafafa;
   transform: translate(-4px,-4px); z-index: 5;
   animation: now-pulse 2.4s ease-in-out infinite;
 }
 .tl-now-line {
-  position: absolute; left: 0; right: 31px;
+  position: absolute; left: 0; right: 0;
   height: 2px; background: var(--accent); opacity: .5; z-index: 4;
 }
 .tl-label {
-  position: absolute; left: 33px; width: 24px;
+  position: absolute; left: 9px; width: 34px;
   text-align: left;
   font-size: 9px; font-weight: 400; color: #888898; letter-spacing: .4px;
   transform: translateY(-50%); line-height: 1; white-space: nowrap;
+  z-index: 6; pointer-events: none;
 }
 .tl-tick {
-  position: absolute; left: 28px; width: 4px; height: 1px;
-  background: #c0c0ce; transform: translateY(-50%);
+  position: absolute; left: 6px; width: 3px; height: 1px;
+  background: #c0c0ce; transform: translateY(-50%); z-index: 6;
 }
 .tl-bar {
-  position: absolute; left: 2px; width: 23px;
-  border-radius: 3px; z-index: 2; cursor: grab; touch-action: none;
-  transition: left .12s, width .12s, opacity .15s; opacity: .65;
+  position: absolute; left: 0; right: 0; width: auto;
+  border-radius: 2px; z-index: 2; cursor: grab; touch-action: none;
+  transition: opacity .15s; opacity: .8;
 }
-.tl-bar:hover, .tl-bar.hl { left: 0px; width: 25px; opacity: .9; }
-.tl-bar.now-active { opacity: .88; }
-.tl-bar.next-up    { opacity: .75; }
+.tl-bar:hover, .tl-bar.hl { opacity: 1; }
+.tl-bar.now-active { opacity: .95; }
+.tl-bar.next-up    { opacity: .85; }
 .tl-bar.dragging {
   cursor: grabbing !important; opacity: 1; z-index: 10;
   box-shadow: 0 4px 16px rgba(0,0,0,.18); transition: none;
@@ -487,14 +488,14 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
 .tl-bar:hover .tl-bar-resize::after,
 .tl-bar:hover .tl-bar-top::after { opacity: 1; }
 .tl-bar-dot {
-  position: absolute; left: 42px; width: 5px; height: 5px;
+  position: absolute; left: 5px; width: 5px; height: 5px;
   border-radius: 50%; border: 1.5px solid #fafafa;
-  transform: translate(-2px,-50%); z-index: 3;
+  transform: translate(-2px,-50%); z-index: 6;
 }
 
 /* ── Tick events (zero-duration / point in time) ─────────────────── */
 .tl-tick-event {
-  position: absolute; left: 2px; right: 33px;
+  position: absolute; left: 0; right: 0;
   height: 4px; border-radius: 2px;
   z-index: 2; cursor: grab; opacity: .75; touch-action: none;
   transition: height .1s, opacity .15s;
@@ -873,7 +874,7 @@ body.dark .settings-sort-select { background-color: #26262e; border-color: #3636
 /* ── Pill design for project/folder task rows ─────────────────────── */
 .ptask-row {
   background: #f8f8fb; border: 1px solid #e8e8ed; border-radius: 7px;
-  margin: 2px 8px 2px 0;
+  margin: 2px 8px;
   padding-top: 2px; padding-bottom: 2px; padding-right: 6px;
   transition: background .1s, border-color .1s;
 }
@@ -883,7 +884,7 @@ body.dark .ptask-row:hover { background: #20202c; border-color: #363648; }
 
 .ftask-row:not(.is-group) {
   background: #f8f8fb; border: 1px solid #e8e8ed; border-radius: 7px;
-  margin: 2px 8px 2px 0;
+  margin: 2px 8px;
   padding-top: 2px; padding-bottom: 2px; padding-right: 6px;
   transition: background .1s, border-color .1s;
 }
@@ -1202,6 +1203,10 @@ body.tab-projects #btn-add-group { display: none; }
 .repeat-day-btn.active { background: #10b981; border-color: #10b981; color: #fff; }
 .repeat-subrow { display: flex; flex-direction: column; gap: 6px; }
 .repeat-subrow label { font-size: 10px; font-weight: 700; color: #a0a0b0; letter-spacing: .3px; text-transform: uppercase; }
+
+/* ── Projects tab: hide timeline ────────────────────────────────────── */
+body.tab-projects #tl-panel,
+body.tab-projects #connections { display: none; }
 
 /* ── Horizons tab & panel ────────────────────────────────────────────── */
 body.tab-horizons #tl-panel,
@@ -1715,19 +1720,15 @@ body.dark #fab-add { box-shadow: 0 2px 12px rgba(var(--accent-rgb),.3); }
   .ptask-row .task-menu-btn, .ftask-row .task-menu-btn { opacity: 1; }
   .tl-zoom-btns  { display: flex !important; }
 
-  /* ── Compact timeline: minimal strip + 24hr labels ── */
-  .tl-panel { width: 40px; }
-  .tl-label { left: 14px; width: 25px; text-align: left;
-    font-size: 10px; color: #686878; font-weight: 500; }
-  .tl-spine, .tl-now-dot { left: 10px; }
-  .tl-now-line { left: 0; right: 30px; }
-  .tl-tick  { left: 11px; width: 3px; }
-  .tl-bar   { left: 0px; width: 8px; opacity: .8; }
-  .tl-bar:hover, .tl-bar.hl { left: 0px; width: 10px; opacity: 1; }
-  .tl-bar[data-lane="1"] { left: 0px; width: 6px; }
-  .tl-bar[data-lane="1"]:hover, .tl-bar[data-lane="1"].hl { left: 0px; width: 8px; }
-  .tl-bar[data-lane="2"] { left: 0px; width: 4px; }
-  .tl-tick-event { left: 0px; right: 30px; }
+  /* ── Compact timeline: full-width bars, label strip ── */
+  .tl-panel { width: 38px; }
+  .tl-label { left: 9px; width: 28px; font-size: 9px; }
+  .tl-spine, .tl-now-dot { left: 5px; }
+  .tl-now-line { left: 0; right: 0; }
+  .tl-tick  { left: 6px; width: 3px; }
+  .tl-bar   { left: 0; right: 0; width: auto; opacity: .85; }
+  .tl-bar:hover, .tl-bar.hl { left: 0; width: auto; opacity: 1; }
+  .tl-tick-event { left: 0; right: 0; }
 
   /* ── Bigger fonts across the board ── */
   .time-badge { font-size: 11.5px; }
@@ -2882,7 +2883,7 @@ function renderTimeline() {
   for (const task of barTasks) {
     const isNowActive = nowActiveIds.has(task.id);
     const isNextUp = task.id === nextUpId;
-    const c = isNowActive ? '#d95f5f' : isNextUp ? '#c99820' : '#9898b4';
+    const c = isNowActive ? 'rgba(180,70,70,0.28)' : isNextUp ? 'rgba(170,140,40,0.25)' : 'rgba(100,100,130,0.18)';
 
     // ── Tick event (zero-duration) ──
     if (task.sched.m === 0) {
@@ -2918,7 +2919,8 @@ function renderTimeline() {
     const dotY=Math.max(0, minsToY(startMins));
     const bdot=document.createElement('div');
     bdot.className='tl-bar-dot'; bdot.dataset.id=task.id;
-    bdot.style.cssText=`top:${dotY}px; background:${c};`; panel.appendChild(bdot);
+    const dotC = isNowActive ? '#c05050' : isNextUp ? '#a08020' : '#8080a0';
+    bdot.style.cssText=`top:${dotY}px; background:${dotC};`; panel.appendChild(bdot);
 
     const inner=document.createElement('div'); inner.className='tl-bar-inner'; inner.style.background=c;
     if (barH>=20) { const tl=document.createElement('div'); tl.className='tl-bar-time'; tl.textContent=task.sched.t; inner.appendChild(tl); }
@@ -4351,7 +4353,7 @@ function _addTaskToLastProject() {
   proj.collapsed = false;
   proj.tasks.push({ id: ++pUid, text: '', done: false, indent: 0, notes: '' });
   saveToStorage(); renderProjects();
-  setTimeout(() => { const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
+  setTimeout(() => { const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) { l.contentEditable='true'; l.focus(); } }, 40);
 }
 function _addFolder() {
   folders.push({ id: ++fUid, name: 'New Folder', collapsed: false });
@@ -4364,7 +4366,7 @@ function _addTaskToLastFolder() {
   folder.collapsed = false;
   tasks.push({ id: ++uid, text: '', isHeader: false, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
   saveToStorage(); renderFolders();
-  setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 30);
+  setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) { l.contentEditable='true'; l.focus(); } }, 30);
 }
 function _addGroupToLastFolder() {
   if (!folders.length) { _addFolder(); return; }
@@ -4429,13 +4431,13 @@ function _submitQuickAdd() {
     proj.collapsed = false;
     proj.tasks.push({ id: ++pUid, text, done: false, indent: 0, notes: '' });
     saveToStorage(); renderProjects();
-    if (!text) setTimeout(() => { const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
+    if (!text) setTimeout(() => { const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) { l.contentEditable='true'; l.focus(); } }, 40);
   } else if (_qaType === 'folders') {
     const folder = folders.find(f => f.id === _qaSelectedId); if (!folder) return;
     folder.collapsed = false;
     tasks.push({ id: ++uid, text, isHeader: false, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
     saveToStorage(); renderFolders();
-    if (!text) setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
+    if (!text) setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) { l.contentEditable='true'; l.focus(); } }, 40);
   } else if (_qaType === 'horizons') {
     const h = horizons.find(h => h.id === _qaSelectedId); if (!h) return;
     h.items.push({ id: hItemUid++, text, notes: '' });
@@ -5309,10 +5311,11 @@ function renderFolders(container) {
           const chk = document.createElement('div'); chk.className = 'pill-chk' + (ft.done ? ' done' : '');
           chk.addEventListener('click', () => { ft.done = !ft.done; saveToStorage(); renderFolders(); });
           const txt = document.createElement('div'); txt.className = 'ptask-text' + (ft.done ? ' done' : '');
-          txt.contentEditable = 'true'; txt.spellcheck = false; txt.textContent = ft.text;
+          txt.contentEditable = 'false'; txt.spellcheck = false; txt.textContent = ft.text;
+          txt.addEventListener('click', () => { if (txt.contentEditable === 'false') { txt.contentEditable = 'true'; txt.focus(); placeCaretAtEnd(txt); } });
           txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
           txt.addEventListener('focus', () => { _editingActive = true; });
-          txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
+          txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
           row.appendChild(ftHandle);
 
           // Schedule badge or button
@@ -5430,7 +5433,8 @@ function renderProjects() {
         chk.addEventListener('click', () => { pt.done = !pt.done; saveToStorage(); renderProjects(); });
         const txt = document.createElement('div');
         txt.className = 'ptask-text' + (pt.done ? ' done' : '');
-        txt.contentEditable = 'true'; txt.spellcheck = false; txt.textContent = pt.text;
+        txt.contentEditable = 'false'; txt.spellcheck = false; txt.textContent = pt.text;
+        txt.addEventListener('click', () => { if (txt.contentEditable === 'false') { txt.contentEditable = 'true'; txt.focus(); placeCaretAtEnd(txt); } });
         txt.addEventListener('keydown', e => {
           if (e.key === 'Enter') {
             e.preventDefault(); txt.blur();
@@ -5438,7 +5442,7 @@ function renderProjects() {
             proj.tasks.splice(i + 1, 0, next); saveToStorage(); renderProjects();
             setTimeout(() => {
               const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`);
-              if (rows[i + 1]) rows[i + 1].focus();
+              if (rows[i + 1]) { rows[i + 1].contentEditable = 'true'; rows[i + 1].focus(); }
             }, 30);
           }
           if (e.key === 'Tab') {
@@ -5449,7 +5453,7 @@ function renderProjects() {
             saveToStorage(); renderProjects();
             setTimeout(() => {
               const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`);
-              if (rows[i]) { rows[i].focus(); placeCaretAtEnd(rows[i]); }
+              if (rows[i]) { rows[i].contentEditable = 'true'; rows[i].focus(); placeCaretAtEnd(rows[i]); }
             }, 30);
           }
           if (e.key === 'Backspace' && !txt.textContent) {
@@ -5459,14 +5463,14 @@ function renderProjects() {
               setTimeout(() => {
                 const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`);
                 const prev = rows[Math.max(0, i - 1)];
-                if (prev) { prev.focus(); placeCaretAtEnd(prev); }
+                if (prev) { prev.contentEditable = 'true'; prev.focus(); placeCaretAtEnd(prev); }
               }, 30);
             }
           }
           if (e.key === 'Escape') txt.blur();
         });
         txt.addEventListener('focus', () => { _editingActive = true; });
-        txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
+        txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
         const ptHandle = document.createElement('div');
         ptHandle.className = 'drag-handle'; ptHandle.innerHTML = '⠿';
         setupProjectTaskDrag(ptHandle, row, proj, pt);
@@ -5812,8 +5816,6 @@ function switchTab(tab) {
   updateHeader();
   if (tab === 'projects') {
     renderProjects();
-    updateTLH();
-    renderTimeline();
   } else if (tab === 'horizons') {
     renderHorizons();
   } else if (tab === 'repeaters') {
