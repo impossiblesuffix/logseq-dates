@@ -1527,6 +1527,37 @@ body.dark .hn-sheet-ta { color: #c0c0d0; }
 }
 .toggle-sw input:checked + .toggle-track::after { transform: translateX(14px); }
 
+/* ── FAB contextual mini-menu ────────────────────────────────── */
+.fab-menu {
+  position: absolute; right: 12px;
+  bottom: calc(56px + 42px + 10px);
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 4px 28px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.06);
+  overflow: hidden; z-index: 110; min-width: 190px;
+  transform: scale(.92) translateY(10px);
+  transform-origin: bottom right;
+  opacity: 0; pointer-events: none;
+  transition: transform .18s cubic-bezier(.4,0,.2,1), opacity .18s;
+}
+.fab-menu.open {
+  transform: scale(1) translateY(0);
+  opacity: 1; pointer-events: auto;
+}
+.fab-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; border: none; background: transparent;
+  width: 100%; text-align: left; font-family: inherit;
+  font-size: 14px; font-weight: 500; color: #18181b;
+  cursor: pointer; touch-action: manipulation;
+  transition: background .1s;
+}
+.fab-menu-item + .fab-menu-item { border-top: 1px solid #f0f0f4; }
+.fab-menu-item:active { background: #f4f4f8; }
+body.dark .fab-menu { background: #1e1e28; border-color: #2e2e3c; box-shadow: 0 4px 28px rgba(0,0,0,.4), 0 0 0 1px #2e2e3c; }
+body.dark .fab-menu-item { color: #d0d0d8; }
+body.dark .fab-menu-item + .fab-menu-item { border-color: #28283a; }
+body.dark .fab-menu-item:active { background: #28283c; }
+
 /* ── Floating add button ─────────────────────────────────────────── */
 #fab-add {
   position: absolute; bottom: 56px; right: 12px;
@@ -2002,11 +2033,9 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
           </div>
           <div id="projects-subpanel">
             <div class="projects-list" id="projects-list"></div>
-            <button class="btn-new-project" id="btn-new-project">+ New Project</button>
           </div>
           <div id="folders-subpanel" style="display:none;flex:1;flex-direction:column;overflow-y:auto">
             <div class="folders-list" id="folders-list"></div>
-            <button class="btn-new-folder" id="btn-new-folder">+ New Folder</button>
           </div>
         </div>
         <div id="horizons-panel"></div>
@@ -2016,6 +2045,7 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
       <div id="week-panel" style="display:none"></div>
     </div>
 
+    <div id="fab-menu" class="fab-menu" aria-hidden="true"></div>
     <button id="fab-add" title="Add">+</button>
 
     <div class="drawer-clip-zone" id="drawer-clip">
@@ -2031,11 +2061,9 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
         <div class="folder-drawer-body">
           <div id="drawer-folders-pane">
             <div class="folders-list" id="drawer-folders-list"></div>
-            <button class="folder-drawer-new" id="drawer-btn-new-folder">+ New Folder</button>
           </div>
           <div id="drawer-projects-pane" style="display:none">
             <div class="projects-list" id="drawer-projects-list"></div>
-            <button class="folder-drawer-new" id="drawer-btn-new-project">+ New Project</button>
           </div>
         </div>
       </div>
@@ -4075,11 +4103,104 @@ function populateTimeSelects() {
 
 $('#btn-add')?.addEventListener('click', addTask);
 $('#btn-add-group')?.addEventListener('click', addHeader);
-$('#fab-add').addEventListener('click', () => {
-  if (currentTab === 'schedule') { openAddModal(); }
-  else if (currentTab === 'projects') { $('#btn-new-project')?.click(); }
-  else if (currentTab === 'horizons') { $$('.btn-add-horizon').at(-1)?.click(); }
-  else if (currentTab === 'repeaters') { $$('.btn-add-repeater').at(-1)?.click(); }
+/* ── FAB mini-menu ───────────────────────────────────────────── */
+let _fabMenuOpen = false;
+function closeFabMenu() {
+  _fabMenuOpen = false;
+  $('#fab-menu').classList.remove('open');
+  document.removeEventListener('pointerdown', _fabMenuOutside, true);
+}
+function _fabMenuOutside(e) {
+  if (!$('#fab-menu').contains(e.target) && e.target !== $('#fab-add')) closeFabMenu();
+}
+function showFabMenu(items) {
+  const menu = $('#fab-menu');
+  menu.innerHTML = '';
+  items.forEach(({ label, fn }) => {
+    const btn = document.createElement('button');
+    btn.className = 'fab-menu-item';
+    btn.textContent = label;
+    btn.addEventListener('pointerdown', e => { e.stopPropagation(); closeFabMenu(); fn(); });
+    menu.appendChild(btn);
+  });
+  menu.classList.add('open');
+  _fabMenuOpen = true;
+  setTimeout(() => document.addEventListener('pointerdown', _fabMenuOutside, true), 50);
+}
+
+function _addProject() {
+  projects.push({ id: ++pUid, name: 'New Project', collapsed: false, tasks: [] });
+  saveToStorage(); renderProjects();
+  setTimeout(() => { const els = $$('.project-name'); const l = els[els.length-1]; if(l){l.focus();document.execCommand('selectAll',false,null);} }, 30);
+}
+function _addTaskToLastProject() {
+  if (!projects.length) { _addProject(); return; }
+  const proj = projects[projects.length - 1];
+  proj.collapsed = false;
+  proj.tasks.push({ id: ++pUid, text: '', done: false, indent: 0, notes: '' });
+  saveToStorage(); renderProjects();
+  setTimeout(() => { const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 40);
+}
+function _addFolder() {
+  folders.push({ id: ++fUid, name: 'New Folder', collapsed: false });
+  saveToStorage(); renderFolders();
+  setTimeout(() => { const els = $$('.folder-name'); const l = els[els.length-1]; if(l){l.focus();document.execCommand('selectAll',false,null);} }, 30);
+}
+function _addTaskToLastFolder() {
+  if (!folders.length) { _addFolder(); return; }
+  const folder = folders[folders.length - 1];
+  folder.collapsed = false;
+  tasks.push({ id: ++uid, text: '', isHeader: false, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
+  saveToStorage(); renderFolders();
+  setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`); const l = rows[rows.length-1]; if(l) l.focus(); }, 30);
+}
+function _addGroupToLastFolder() {
+  if (!folders.length) { _addFolder(); return; }
+  const folder = folders[folders.length - 1];
+  folder.collapsed = false;
+  tasks.push({ id: ++uid, text: 'Group', isHeader: true, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
+  saveToStorage(); renderFolders();
+  setTimeout(() => { const rows = $$(`.folder-block[data-fid="${folder.id}"] .ftask-group-text`); const l = rows[rows.length-1]; if(l){l.focus();document.execCommand('selectAll',false,null);} }, 30);
+}
+function _addHorizonSection() {
+  horizons.push({ id: hUid++, name: 'New Horizon', items: [] });
+  saveToStorage(); renderHorizons();
+  setTimeout(() => { const all = $$('.horizon-name-edit'); const l = all[all.length-1]; if(l){l.focus();document.execCommand('selectAll',false,null);} }, 30);
+}
+function _addItemToLastHorizon() {
+  if (!horizons.length) { _addHorizonSection(); return; }
+  const h = horizons[horizons.length - 1];
+  h.items.push({ id: hItemUid++, text: '', notes: '' });
+  saveToStorage(); renderHorizons();
+  setTimeout(() => { const all = $$('.h-item-text'); const l = all[all.length-1]; if(l) l.focus(); }, 30);
+}
+
+$('#fab-add').addEventListener('click', e => {
+  e.stopPropagation();
+  if (_fabMenuOpen) { closeFabMenu(); return; }
+  if (currentTab === 'schedule') { openAddModal(); return; }
+  if (currentTab === 'repeaters') { addNewRepeater(); return; }
+  if (currentTab === 'projects') {
+    if (projSubTab === 'projects') {
+      showFabMenu([
+        { label: 'New project', fn: _addProject },
+        { label: 'Add task', fn: _addTaskToLastProject },
+      ]);
+    } else {
+      showFabMenu([
+        { label: 'New folder', fn: _addFolder },
+        { label: 'Add task', fn: _addTaskToLastFolder },
+        { label: 'Add group', fn: _addGroupToLastFolder },
+      ]);
+    }
+    return;
+  }
+  if (currentTab === 'horizons') {
+    showFabMenu([
+      { label: 'New section', fn: _addHorizonSection },
+      { label: 'Add item', fn: _addItemToLastHorizon },
+    ]);
+  }
 });
 $('#btn-overflow')?.addEventListener('click', () => {
   $('#header-overflow-panel')?.classList.toggle('open');
@@ -4819,22 +4940,7 @@ $('#btn-folder-drawer').addEventListener('click', () => toggleFolderDrawer());
 $('#btn-drawer-close').addEventListener('click', () => toggleFolderDrawer(false));
 $('#drawer-btn-folders').addEventListener('click', () => setDrawerSubTab('folders'));
 $('#drawer-btn-projects').addEventListener('click', () => setDrawerSubTab('projects'));
-$('#drawer-btn-new-folder').addEventListener('click', () => {
-  folders.push({ id: ++fUid, name: 'New Folder', collapsed: false });
-  saveToStorage(); renderFolders();
-  setTimeout(() => {
-    const names = $$('#drawer-folders-list .folder-name'); const last = names[names.length - 1];
-    if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-  }, 30);
-});
-$('#drawer-btn-new-project').addEventListener('click', () => {
-  projects.push({ id: ++pUid, name: 'New Project', collapsed: false, tasks: [] });
-  saveToStorage(); renderDrawerProjects();
-  setTimeout(() => {
-    const names = $$('#drawer-projects-list .project-name'); const last = names[names.length - 1];
-    if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-  }, 40);
-});
+// drawer add buttons removed — use FAB contextual menu instead
 
 // ── Projects / Folders sub-tab ────────────────────────────────────────────────
 let projSubTab = 'projects';
@@ -4951,28 +5057,7 @@ function renderFolders(container) {
         taskList.appendChild(row);
       });
 
-      const btnRow = document.createElement('div'); btnRow.style.cssText = 'display:flex;gap:4px;padding:2px 8px 6px';
-      const addTask = document.createElement('button'); addTask.className = 'btn-add-ptask'; addTask.textContent = '+ task';
-      addTask.addEventListener('click', () => {
-        tasks.push({ id: ++uid, text: '', isHeader: false, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
-        saveToStorage(); renderFolders();
-        setTimeout(() => {
-          const rows = $$(`.folder-block[data-fid="${folder.id}"] .ptask-text`);
-          const last = rows[rows.length - 1]; if (last) last.focus();
-        }, 30);
-      });
-      const addGroup = document.createElement('button'); addGroup.className = 'btn-add-ptask'; addGroup.textContent = '+ group';
-      addGroup.addEventListener('click', () => {
-        tasks.push({ id: ++uid, text: 'Group', isHeader: true, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
-        saveToStorage(); renderFolders();
-        setTimeout(() => {
-          const rows = $$(`.folder-block[data-fid="${folder.id}"] .ftask-group-text`);
-          const last = rows[rows.length - 1];
-          if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-        }, 30);
-      });
-      btnRow.append(addTask, addGroup);
-      block.append(taskList, btnRow);
+      block.append(taskList);
     }
     container.appendChild(block);
   }
@@ -5096,18 +5181,7 @@ function renderProjects() {
         row.append(ptHandle, chk, txt, menuBtn);
         taskList.appendChild(row);
       }
-      const addBtn = document.createElement('button'); addBtn.className = 'btn-add-ptask';
-      addBtn.textContent = '+ Add task';
-      addBtn.addEventListener('click', () => {
-        proj.tasks.push({ id: ++pUid, text: 'New task', done: false, indent: 0, notes: '' });
-        saveToStorage(); renderProjects();
-        setTimeout(() => {
-          const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`);
-          const last = rows[rows.length - 1];
-          if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-        }, 40);
-      });
-      block.append(taskList, addBtn);
+      block.append(taskList);
     }
     container.appendChild(block);
   }
@@ -5252,15 +5326,10 @@ function renderRepeaters() {
 
   if (allRepeaters.length === 0) {
     const empty = document.createElement('div'); empty.className = 'rep-empty';
-    empty.innerHTML = 'No repeating tasks yet.<br>Click <strong>+ New Repeater</strong> below to add one.';
+    empty.innerHTML = 'No repeating tasks yet.<br>Tap <strong>+</strong> below to add one.';
     panel.appendChild(empty);
   }
 
-  // "+ New Repeater" button
-  const addBtn = document.createElement('button'); addBtn.className = 'btn-add-repeater';
-  addBtn.textContent = '+ New Repeater';
-  addBtn.addEventListener('click', addNewRepeater);
-  panel.appendChild(addBtn);
 }
 
 // ── Horizon note sheet ─────────────────────────────────────────────────────────
@@ -5399,19 +5468,7 @@ function renderHorizons() {
     }
     renderItems();
 
-    const addItemBtn = document.createElement('button'); addItemBtn.className = 'btn-add-hitem';
-    addItemBtn.textContent = '+ Add item';
-    addItemBtn.addEventListener('click', () => {
-      const newItem = { id: hItemUid++, text: '', notes: '' };
-      h.items.push(newItem); saveToStorage(); renderItems();
-      setTimeout(() => {
-        const all = itemsList.querySelectorAll('.h-item-text');
-        const last = all[all.length - 1];
-        if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-      }, 30);
-    });
-
-    section.append(head, itemsList, addItemBtn);
+    section.append(head, itemsList);
     if (i < horizons.length - 1) {
       const div = document.createElement('div'); div.className = 'horizon-divider';
       section.appendChild(div);
@@ -5419,24 +5476,11 @@ function renderHorizons() {
     panel.appendChild(section);
   });
 
-  // "+ Add Horizon" button
-  const addBtn = document.createElement('button'); addBtn.className = 'btn-add-horizon';
-  addBtn.textContent = '+ Add Horizon';
-  addBtn.addEventListener('click', () => {
-    horizons.push({ id: hUid++, name: 'New Horizon', items: [] });
-    saveToStorage(); renderHorizons();
-    // Focus the new name for immediate editing
-    setTimeout(() => {
-      const all = $$('.horizon-name-edit');
-      const last = all[all.length - 1];
-      if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-    }, 30);
-  });
-  panel.appendChild(addBtn);
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────────
 function switchTab(tab) {
+  closeFabMenu();
   currentTab = tab;
   $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.body.classList.toggle('tab-projects',  tab === 'projects');
@@ -5551,22 +5595,7 @@ $('#modal-time').addEventListener('input', () => {
 $$('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 $('#btn-sub-projects').addEventListener('click', () => setProjSubTab('projects'));
 $('#btn-sub-folders').addEventListener('click',  () => setProjSubTab('folders'));
-$('#btn-new-folder').addEventListener('click', () => {
-  folders.push({ id: ++fUid, name: 'New Folder', collapsed: false });
-  saveToStorage(); renderFolders();
-  setTimeout(() => {
-    const names = $$('.folder-name'); const last = names[names.length - 1];
-    if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-  }, 30);
-});
-$('#btn-new-project').addEventListener('click', () => {
-  projects.push({ id: ++pUid, name: 'New Project', collapsed: false, tasks: [] });
-  saveToStorage(); renderProjects();
-  setTimeout(() => {
-    const names = $$('.project-name'); const last = names[names.length - 1];
-    if (last) { last.focus(); document.execCommand('selectAll', false, null); }
-  }, 40);
-});
+// btn-new-project / btn-new-folder removed — use FAB contextual menu instead
 
 // ── Global keyboard shortcuts ──────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
