@@ -22,9 +22,9 @@ body.dragging-active { overflow: hidden; touch-action: none; }
 
 body {
   font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f5f5f7;
+  background: #f0f0f4;
   color: #18181b;
-  padding: 16px 12px;
+  padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
   height: 100dvh; overflow: hidden;
   display: flex; flex-direction: column;
 }
@@ -296,10 +296,14 @@ body {
 .outer {
   display: flex; flex: 1; min-height: 0;
   flex-direction: column;
-  border-radius: 10px;
+  border-radius: 0;
   position: relative;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 0 0 1px #e8e8ed;
+  box-shadow: none;
+}
+@media (min-width: 600px) {
+  body { padding: 16px 12px; background: #f5f5f7; }
+  .outer { border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 0 0 1px #e8e8ed; }
 }
 
 /* ── Timeline panel ──────────────────────────────────────────────── */
@@ -532,7 +536,7 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
   background: rgba(234,179,8,.04) !important;
 }
 .pill-chk {
-  flex-shrink: 0; width: 13px; height: 13px;
+  flex-shrink: 0; width: 16px; height: 16px;
   border: 1px solid #d8d8e0; border-radius: 50%; cursor: pointer;
   display: grid; place-items: center; transition: all .12s;
 }
@@ -544,7 +548,7 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0
   transform: rotate(40deg) translate(0,-1px);
 }
 .pill-text {
-  flex: 1; font-size: 12.5px; font-family: inherit; font-weight: 500;
+  flex: 1; font-size: 15px; font-family: inherit; font-weight: 500;
   color: #18181b; outline: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   min-width: 0; cursor: text; -webkit-user-modify: read-write-plaintext-only;
@@ -872,7 +876,7 @@ body.tab-projects #btn-add-group { display: none; }
 
 /* ── Projects / Folders sub-nav ─────────────────────────────────────── */
 .proj-subnav {
-  display: flex; gap: 0; padding: 8px 10px 4px; flex-shrink: 0;
+  display: flex; gap: 0; padding: 10px 14px 4px; flex-shrink: 0;
 }
 .proj-subnav-btn {
   flex: 1; padding: 4px 8px; border: 1px solid #e4e4e7; background: transparent;
@@ -931,13 +935,13 @@ body.tab-projects #btn-add-group { display: none; }
 }
 .ftask-sched-badge:hover { background: rgba(239,68,68,.12); color: #ef4444; }
 .btn-new-folder {
-  display: block; width: calc(100% - 20px); margin: 6px 10px 12px;
-  padding: 6px; border: 1px dashed #d4d4dc; border-radius: 7px;
-  background: transparent; color: #a0a0b8; font-family: inherit;
-  font-size: 11.5px; font-weight: 600; cursor: pointer; text-align: center;
-  transition: border-color .12s, color .12s, background .12s;
+  display: block; width: 100%;
+  border: none; background: transparent; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: #b0b0bc;
+  padding: 6px 14px; text-align: left; cursor: pointer;
+  transition: color .1s; border-radius: 0;
 }
-.btn-new-folder:hover { border-color: #4f46e5; color: #4f46e5; background: rgba(79,70,229,.04); }
+.btn-new-folder:hover { color: #4f46e5; }
 
 /* ── Projects list ───────────────────────────────────────────────────── */
 .projects-list { padding: 8px 0 4px; }
@@ -992,7 +996,7 @@ body.tab-projects #btn-add-group { display: none; }
   padding: 1px 10px 1px 0; position: relative;
 }
 .ptask-text {
-  flex: 1; font-size: 12.5px; font-family: inherit; font-weight: 500;
+  flex: 1; font-size: 15px; font-family: inherit; font-weight: 500;
   color: #18181b; outline: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   min-width: 0; cursor: text; -webkit-user-modify: read-write-plaintext-only;
@@ -1016,14 +1020,13 @@ body.tab-projects #btn-add-group { display: none; }
 }
 .btn-add-ptask:hover { color: #4f46e5; }
 .btn-new-project {
-  display: block; margin: 6px 12px 12px;
-  border: 1.5px dashed #d4d4d8; background: transparent;
-  font-family: inherit; font-size: 12px; font-weight: 600;
-  color: #a0a0b0; cursor: pointer; padding: 8px;
-  border-radius: 8px; text-align: center;
-  transition: border-color .12s, color .12s;
+  display: block; width: 100%;
+  border: none; background: transparent; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: #b0b0bc;
+  padding: 6px 14px; text-align: left; cursor: pointer;
+  transition: color .1s; border-radius: 0;
 }
-.btn-new-project:hover { border-color: #4f46e5; color: #4f46e5; }
+.btn-new-project:hover { color: #4f46e5; }
 
 /* ── Move-to buttons ─────────────────────────────────────────────────── */
 .move-btn {
@@ -1146,7 +1149,7 @@ body.tab-horizons #btn-add,
 body.tab-horizons #btn-add-group { display: none; }
 #horizons-panel {
   display: none; flex-direction: column; flex: 1;
-  overflow-y: auto; padding: 10px 14px 24px;
+  overflow-y: auto; padding: 12px 16px 24px;
 }
 .horizon-section { margin-bottom: 14px; }
 .horizon-head {
@@ -1266,14 +1269,13 @@ body.tab-repeaters #btn-add-group { display: none; }
 .horizon-section.h-drag-over-top    { border-top: 2px solid #4f46e5; }
 .horizon-section.h-drag-over-bottom { border-bottom: 2px solid #4f46e5; }
 .btn-add-horizon {
-  display: block; width: 100%; margin: 4px 0 12px;
-  border: 1.5px dashed #d4d4d8; background: transparent;
-  font-family: inherit; font-size: 12px; font-weight: 600;
-  color: #a0a0b0; cursor: pointer; padding: 7px;
-  border-radius: 8px; text-align: center;
-  transition: border-color .12s, color .12s;
+  display: block; width: 100%;
+  border: none; background: transparent; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: #b0b0bc;
+  padding: 6px 14px; text-align: left; cursor: pointer;
+  transition: color .1s; border-radius: 0;
 }
-.btn-add-horizon:hover { border-color: #4f46e5; color: #4f46e5; }
+.btn-add-horizon:hover { color: #4f46e5; }
 
 /* ── Horizon bullet list ──────────────────────────────────────────── */
 .h-items-list { padding: 2px 0 4px; }
@@ -1723,8 +1725,12 @@ body.dark .sched-dur-preset.active { background: #4f46e5; border-color: #4f46e5;
 .btn-signout:hover { border-color: #ef4444; color: #ef4444; }
 
 /* ── Dark mode ───────────────────────────────────────────────────── */
-body.dark { background: #131316; color: #e4e4e8; }
-body.dark .outer { background: #1d1d22; box-shadow: 0 1px 4px rgba(0,0,0,.4), 0 0 0 1px #2c2c36; }
+body.dark { background: #1d1d22; color: #e4e4e8; }
+body.dark .outer { background: #1d1d22; box-shadow: none; }
+@media (min-width: 600px) {
+  body.dark { background: #0e0e12; }
+  body.dark .outer { box-shadow: 0 1px 4px rgba(0,0,0,.4), 0 0 0 1px #2c2c36; }
+}
 body.dark .bottom-tab-bar { border-top-color: rgba(255,255,255,.07); }
 body.dark .tab-btn { color: #42424e; }
 body.dark .tab-btn:hover { color: #808090; }
@@ -1828,8 +1834,8 @@ body.dark .folder-del { color: #404050; }
 body.dark .folder-icon { color: #8a7c40; }
 body.dark .ftask-group-text { color: #484858; }
 body.dark .ftask-sched-badge { background: rgba(124,121,240,.15); color: #7c79f0; }
-body.dark .btn-new-folder { border-color: #2c2c38; color: #484858; }
-body.dark .btn-new-folder:hover { border-color: rgba(124,121,240,.5); color: #7c79f0; background: rgba(124,121,240,.06); }
+body.dark .btn-new-folder { color: #383848; }
+body.dark .btn-new-folder:hover { color: #7c79f0; }
 body.dark .project-name { color: #808090; }
 body.dark .project-chevron { color: #484858; }
 body.dark .project-del { color: #404050; }
@@ -1839,8 +1845,8 @@ body.dark .projects-inactive-sep::before { background: #2a2a38; }
 body.dark .ptask-text { color: #b0b0c0; }
 body.dark .ptask-text.done { color: #404050; }
 body.dark .ptask-del { color: #404050; }
-body.dark .btn-new-project { border-color: #2c2c38; color: #484858; background: transparent; }
-body.dark .btn-new-project:hover { background: #232330; color: #808090; }
+body.dark .btn-new-project { color: #383848; }
+body.dark .btn-new-project:hover { color: #7c79f0; }
 body.dark .empty-projects { color: #404050; }
 /* folder drawer */
 body.dark .folder-drawer.open { background: #1d1d24; box-shadow: 0 -6px 32px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06); }
@@ -1869,7 +1875,9 @@ body.dark .horizon-section { border-bottom-color: #28283a; }
 body.dark .horizon-name-edit { color: #808090; }
 body.dark .horizon-ta { background: #181820; border-color: #28283a; color: #b0b0c0; }
 body.dark .horizon-ta:focus { border-color: rgba(124,121,240,.4); }
-body.dark .horizon-del-btn, body.dark .btn-add-horizon { color: #404050; }
+body.dark .horizon-del-btn { color: #404050; }
+body.dark .btn-add-horizon { color: #383848; }
+body.dark .btn-add-horizon:hover { color: #7c79f0; }
 body.dark .horizon-drag-handle { color: #38384a; }
 /* repeaters */
 body.dark .rep-card { background: #1d1d24; border-color: #28283a; }
