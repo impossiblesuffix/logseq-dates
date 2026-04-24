@@ -4068,6 +4068,27 @@ async function loadFromSupabase() {
   }
 }
 
+// ── Mark now-active / next-up pills synchronously (prevents flicker) ──────────
+// renderTimeline() runs in a RAF and would leave a blank frame between
+// renderTasks() creating pills and the RAF adding colour classes. Calling this
+// synchronously after renderTasks() eliminates that gap.
+function _markNowNextPills() {
+  if (viewDate && viewDate !== todayStr()) return;
+  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+  $$('.pill.now-active,.pill.next-up').forEach(p => p.classList.remove('now-active', 'next-up'));
+  let nextUpId = null, nextUpStart = Infinity;
+  for (const t of tasks) {
+    if (!t.sched || !t.sched.t || !taskMatchesView(t)) continue;
+    const start = timeToMins(t.sched.t), end = start + (t.sched.m || 0);
+    if (nowMins >= start && nowMins < end) {
+      $(`.pill[data-id="${t.id}"]`)?.classList.add('now-active');
+    } else if (start > nowMins && start < nextUpStart) {
+      nextUpStart = start; nextUpId = t.id;
+    }
+  }
+  if (nextUpId) $(`.pill[data-id="${nextUpId}"]`)?.classList.add('next-up');
+}
+
 // ── Rerender ──────────────────────────────────────────────────────────────────
 function rerender() {
   saveToStorage();
@@ -4079,6 +4100,7 @@ function rerender() {
   applySort(currentSort);
   updateHeader();
   renderTasks();
+  _markNowNextPills();
   requestAnimationFrame(()=>{
     renderTimeline();
     syncDatePanelHeight();
