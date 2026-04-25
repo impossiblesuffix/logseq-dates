@@ -352,8 +352,9 @@ body {
 }
 .tl-zoom-btn:hover { background: rgba(0,0,0,.05); color: var(--accent); }
 .tl-zoom-btn:active { background: rgba(var(--accent-rgb),.1); color: var(--accent); }
+body.dark .tl-zoom-btns { border-color: #2c2c38; }
 body.dark .tl-zoom-btn { color: #6060a0; }
-body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: #8080d0; }
+body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: var(--accent); }
 .tl-spine {
   position: absolute; top: 0; bottom: 0;
   left: 50%; width: 1px; background: #d0d0da;
@@ -1192,6 +1193,14 @@ body.dark .ptask-row:hover { background: #20202c; border-color: #363648; }
 
 /* ── Repeat modal ────────────────────────────────────────────────────── */
 .repeat-modal-card { width: 360px; gap: 14px; }
+.repeat-name-input {
+  width: 100%; box-sizing: border-box; border: 1px solid #e0e0e8; border-radius: 8px;
+  padding: 9px 12px; font-size: 15px; font-family: inherit; outline: none;
+  background: #fff; color: #3a3a44; transition: border-color .1s;
+}
+.repeat-name-input:focus { border-color: var(--accent); }
+body.dark .repeat-name-input { background: #26262e; border-color: #36363e; color: #e4e4e8; }
+body.dark .repeat-name-input:focus { border-color: var(--accent); }
 .repeat-freq-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .repeat-freq-btn {
   flex: 1; padding: 6px 4px; border: 1px solid #e4e4e7; background: #fff;
@@ -1918,10 +1927,10 @@ body.dark .sched-dur-preset.active { background: var(--accent); border-color: va
 .btn-signout:hover { border-color: #ef4444; color: #ef4444; }
 
 /* ── Dark mode ───────────────────────────────────────────────────── */
-body.dark { background: #0e0e12; color: #e4e4e8; }
-body.dark .outer { background: #0e0e12; box-shadow: none; }
+body.dark { background: #0d0d0d; color: #e4e4e8; }
+body.dark .outer { background: #0d0d0d; box-shadow: none; }
 @media (min-width: 600px) {
-  body.dark { background: #0e0e12; }
+  body.dark { background: #0d0d0d; }
   body.dark .outer { box-shadow: 0 1px 4px rgba(0,0,0,.4), 0 0 0 1px #2c2c36; }
 }
 body.dark .bottom-tab-bar { border-top-color: rgba(255,255,255,.07); }
@@ -2366,6 +2375,7 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
 <div id="repeat-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
   <div class="modal-card repeat-modal-card">
     <h3>Repeat</h3>
+    <input id="repeat-name-input" type="text" placeholder="Repeater name…" class="repeat-name-input" spellcheck="false">
     <div>
       <div class="modal-field"><label>Frequency</label>
         <div class="repeat-freq-row">
@@ -4662,7 +4672,7 @@ window.addEventListener('resize', drawConnections);
 window.addEventListener('scroll', drawConnections);
 
 // ── Repeat modal ───────────────────────────────────────────────────────────────
-let _repeatTask = null;
+let _repeatTask = null, _repeatIsNew = false;
 let _repeatFreq = 'none';
 let _repeatDay  = 0;
 let _repeatDOM  = 1;
@@ -4787,6 +4797,7 @@ $('#sched-modal').addEventListener('pointerdown', e => { if (e.target === $('#sc
 
 function openRepeatModal(task) {
   _repeatTask = task;
+  $('#repeat-name-input').value = task.text || '';
   const r = task.repeat;
   _repeatFreq = r ? r.freq : 'none';
   _repeatDay  = r?.day  ?? ((new Date().getDay() + 6) % 7);
@@ -4809,9 +4820,19 @@ function updateRepeatSections() {
   // Hide end-date for manual (instances are separate tasks)
   $('#repeat-until').closest('.repeat-subrow').style.display = _repeatFreq === 'manual' ? 'none' : '';
 }
-function closeRepeatModal() { $('#repeat-modal').style.display = 'none'; _repeatTask = null; }
+function closeRepeatModal() {
+  if (_repeatIsNew && _repeatTask) {
+    tasks.splice(tasks.indexOf(_repeatTask), 1);
+    _repeatIsNew = false;
+    renderRepeaters();
+  }
+  $('#repeat-modal').style.display = 'none'; _repeatTask = null;
+}
 function submitRepeatModal() {
   if (!_repeatTask) return;
+  const nameVal = $('#repeat-name-input').value.trim();
+  if (nameVal) _repeatTask.text = nameVal;
+  _repeatIsNew = false;
   if (_repeatFreq === 'none') {
     _repeatTask.repeat = null;
   } else if (_repeatFreq === 'manual') {
@@ -5560,9 +5581,8 @@ function addNewRepeater() {
     indent: 0, color: null, sched: { date: todayStr() }, notes: ''
   };
   tasks.push(newTask);
-  saveToStorage();
+  _repeatIsNew = true;
   openRepeatModal(newTask);
-  // After modal closes + repeat set, rerender() runs renderRepeaters() automatically
 }
 
 // ── Repeaters render ───────────────────────────────────────────────────────────
