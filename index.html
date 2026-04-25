@@ -2454,9 +2454,8 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
         <button class="sched-dur-preset" data-mins="120">2h</button>
       </div>
       <div class="sched-custom-row">
-        <span class="sched-custom-label">Custom</span>
-        <input type="number" id="sched-dur-custom" class="modal-dur-input" placeholder="–" min="0" max="1440" step="5" style="width:64px">
-        <span class="modal-dur-unit">min</span>
+        <span class="sched-custom-label">End time</span>
+        <input type="time" id="sched-end-time" class="modal-input-sm" style="font-size:14px;padding:8px 10px;">
       </div>
     </div>
     <div class="sched-modal-actions">
@@ -4887,6 +4886,13 @@ function openPtaskMenu(items, anchorEl) {
 }
 
 let _schedTask = null;
+let _schedDurMins = 30;
+
+function _timeToMins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+function _minsToTimeStr(total) {
+  const h = Math.floor(total / 60) % 24, m = total % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
 
 function openSchedModal(task) {
   _schedTask = task;
@@ -4894,27 +4900,32 @@ function openSchedModal(task) {
   $('#sched-modal-title').textContent = name.length > 32 ? name.slice(0, 32) + '…' : name;
   $('#sched-date-input').value = task.sched?.date || todayStr();
   $('#sched-time-input').value = task.sched?.t || '09:00';
-  const m = task.sched?.m ?? 30;
-  _setSchedDur(m);
+  _schedDurMins = task.sched?.m ?? 30;
+  _setSchedDur(_schedDurMins);
   $('#sched-modal').style.display = 'flex';
 }
 function closeSchedModal() { $('#sched-modal').style.display = 'none'; _schedTask = null; }
 function _setSchedDur(mins) {
+  _schedDurMins = mins;
   $$('.sched-dur-preset').forEach(b => b.classList.toggle('active', parseInt(b.dataset.mins) === mins));
-  $('#sched-dur-custom').value = mins;
+  const startT = $('#sched-time-input').value || '09:00';
+  $('#sched-end-time').value = _minsToTimeStr(_timeToMins(startT) + mins);
 }
 $$('.sched-dur-preset').forEach(b => b.addEventListener('click', () => _setSchedDur(parseInt(b.dataset.mins))));
-$('#sched-dur-custom').addEventListener('input', e => {
-  const v = parseInt(e.target.value);
-  if (!isNaN(v)) _setSchedDur(v);
+$('#sched-time-input').addEventListener('change', () => _setSchedDur(_schedDurMins));
+$('#sched-end-time').addEventListener('change', () => {
+  const start = $('#sched-time-input').value || '09:00';
+  const end = $('#sched-end-time').value;
+  if (!end) return;
+  _schedDurMins = Math.max(0, _timeToMins(end) - _timeToMins(start));
+  $$('.sched-dur-preset').forEach(b => b.classList.toggle('active', parseInt(b.dataset.mins) === _schedDurMins));
 });
 $('#sched-save').addEventListener('click', () => {
   if (!_schedTask) return;
   const t = $('#sched-time-input').value || '09:00';
-  const m = parseInt($('#sched-dur-custom').value) || 0;
   const d = $('#sched-date-input').value;
   if (!_schedTask.color) _schedTask.color = '#9898b4';
-  _schedTask.sched = { ...(_schedTask.sched || {}), t, m, ...(d ? { date: d } : {}) };
+  _schedTask.sched = { ...(_schedTask.sched || {}), t, m: _schedDurMins, ...(d ? { date: d } : {}) };
   closeSchedModal(); saveToStorage(); rerender();
 });
 $('#sched-clear').addEventListener('click', () => {
