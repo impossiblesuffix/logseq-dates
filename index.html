@@ -1395,7 +1395,13 @@ body.tab-repeaters #btn-add-group { display: none; }
 .btn-add-horizon:hover { color: var(--accent); }
 
 /* ── Horizon bullet list ──────────────────────────────────────────── */
-.h-items-list { padding: 2px 0 4px; }
+.h-items-list { padding: 2px 0 4px; position: relative; }
+.h-item-drag {
+  flex-shrink: 0; color: #d4d4dc; font-size: 13px; padding: 0 3px; cursor: grab;
+  opacity: 0; transition: opacity .1s; line-height: 1;
+}
+.h-item-row:hover .h-item-drag { opacity: 1; }
+body.dark .h-item-drag { color: #383848; }
 .h-item-row {
   display: flex; align-items: center; gap: 8px;
   padding: 4px 12px 4px 10px; border-radius: 6px;
@@ -1472,15 +1478,31 @@ body.dark .btn-add-hitem { color: #404050; }
 .hn-sheet-overlay {
   position: fixed; inset: 0; z-index: 10100;
   background: rgba(0,0,0,.4);
-  display: flex; align-items: flex-end;
+  display: flex; align-items: flex-end; justify-content: center;
 }
 .hn-sheet-card {
-  width: 100%; background: #fff; border-radius: 16px 16px 0 0;
+  width: 100%; max-width: 580px; background: #fff; border-radius: 16px 16px 0 0;
   height: 90dvh; display: flex; flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0,0,0,.15);
   transform: translateY(100%);
   transition: transform .28s cubic-bezier(.4,0,.2,1);
 }
+.notes-fmt-bar {
+  display: flex; gap: 2px; padding: 6px 12px 4px; flex-shrink: 0;
+  border-bottom: 1px solid #f0f0f4;
+}
+.fmt-btn {
+  border: none; background: transparent; font-family: inherit;
+  font-size: 13px; color: #a0a0b0; cursor: pointer;
+  padding: 4px 8px; border-radius: 6px; line-height: 1;
+  transition: background .1s, color .1s;
+}
+.fmt-btn:hover { background: #f0f0f6; color: var(--accent); }
+.fmt-btn[data-fmt="bold"] { font-weight: 800; }
+.fmt-btn[data-fmt="italic"] { font-style: italic; }
+body.dark .notes-fmt-bar { border-bottom-color: #28283a; }
+body.dark .fmt-btn { color: #48485a; }
+body.dark .fmt-btn:hover { background: #26263a; color: var(--accent); }
 .hn-sheet-card.open { transform: translateY(0); }
 .hn-sheet-handle {
   width: 36px; height: 4px; border-radius: 2px;
@@ -2467,6 +2489,14 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
     <div class="hn-sheet-head">
       <span class="hn-sheet-title" id="hn-sheet-title"></span>
       <button class="hn-close-btn" id="hn-close">Done</button>
+    </div>
+    <div class="notes-fmt-bar">
+      <button class="fmt-btn" data-fmt="bold" title="Bold">B</button>
+      <button class="fmt-btn" data-fmt="italic" title="Italic">I</button>
+      <button class="fmt-btn" data-fmt="code" title="Code">&lt;/&gt;</button>
+      <button class="fmt-btn" data-fmt="heading" title="Heading">H2</button>
+      <button class="fmt-btn" data-fmt="bullet" title="Bullet">•</button>
+      <button class="fmt-btn" data-fmt="strike" title="Strikethrough">S̶</button>
     </div>
     <textarea class="hn-sheet-ta" id="hn-sheet-ta" placeholder="Write your thoughts…"></textarea>
   </div>
@@ -4931,31 +4961,42 @@ $('#repeat-cancel').addEventListener('click', closeRepeatModal);
 $('#repeat-modal').addEventListener('mousedown', e => { if (e.target === $('#repeat-modal')) closeRepeatModal(); });
 
 // ── Notes modal ────────────────────────────────────────────────────────────────
-let _notesTask = null, _notesDoneCallback = null;
+// ── Unified notes sheet (replaces notes-modal + hn-sheet split) ───────────────
+let _notesOnDone = null;
 function openNotesModal(task, onDone) {
-  _notesTask = task; _notesDoneCallback = onDone || null;
-  $('#notes-modal-title').textContent = task.text || 'Task';
-  $('#notes-textarea').value = task.notes || '';
-  $('#notes-modal').style.display = 'flex';
-  setTimeout(() => $('#notes-textarea').focus(), 30);
+  _hnHorizon = null; _hnItem = task; _notesOnDone = onDone || null;
+  $('#hn-sheet-title').textContent = task.text || 'Task';
+  $('#hn-sheet-ta').value = task.notes || '';
+  $('#hn-sheet').style.display = 'flex';
+  requestAnimationFrame(() => $('#hn-sheet-card').classList.add('open'));
+  setTimeout(() => $('#hn-sheet-ta').focus(), 300);
 }
-function closeNotesModal(save) {
-  if (_notesTask && save !== false) {
-    _notesTask.notes = $('#notes-textarea').value;
-    saveToStorage();
-    if (_notesDoneCallback) _notesDoneCallback();
-  }
-  $('#notes-modal').style.display = 'none';
-  _notesTask = null; _notesDoneCallback = null;
-}
-$('#notes-modal-close').addEventListener('click', () => closeNotesModal());
-$('#notes-modal-done').addEventListener('click', () => closeNotesModal());
-$('#notes-modal').addEventListener('mousedown', e => { if (e.target === $('#notes-modal')) closeNotesModal(); });
-$('#notes-textarea').addEventListener('keydown', e => { if (e.key === 'Escape') closeNotesModal(); });
+function closeNotesModal(save) { closeHorizonNote(save); }
 
 $('#hn-close').addEventListener('click', () => closeHorizonNote());
 $('#hn-sheet').addEventListener('click', e => { if (e.target === $('#hn-sheet')) closeHorizonNote(); });
 $('#hn-sheet-ta').addEventListener('keydown', e => { if (e.key === 'Escape') closeHorizonNote(); });
+
+// Markdown formatting toolbar
+$$('.fmt-btn').forEach(btn => {
+  btn.addEventListener('mousedown', e => { e.preventDefault(); }); // keep textarea focused
+  btn.addEventListener('click', () => {
+    const ta = $('#hn-sheet-ta');
+    const start = ta.selectionStart, end = ta.selectionEnd, sel = ta.value.slice(start, end);
+    const fmt = btn.dataset.fmt;
+    let pre = '', post = '', newSel = sel;
+    if (fmt === 'bold')    { pre = '**'; post = '**'; }
+    else if (fmt === 'italic') { pre = '*'; post = '*'; }
+    else if (fmt === 'code')   { pre = '`'; post = '`'; }
+    else if (fmt === 'strike') { pre = '~~'; post = '~~'; }
+    else if (fmt === 'heading') { pre = '## '; post = ''; }
+    else if (fmt === 'bullet')  { pre = '- '; post = ''; }
+    ta.value = ta.value.slice(0, start) + pre + newSel + post + ta.value.slice(end);
+    ta.selectionStart = start + pre.length;
+    ta.selectionEnd   = end + pre.length + (post ? 0 : 0);
+    ta.focus();
+  });
+});
 
 // ── Move between schedule and projects ────────────────────────────────────────
 function showMovePicker(anchor, onSelectProj, onSelectFolder) {
@@ -5976,15 +6017,17 @@ function openHorizonNote(horizon, item) {
   setTimeout(() => $('#hn-sheet-ta').focus(), 300);
 }
 
-function closeHorizonNote() {
-  if (_hnItem) {
+function closeHorizonNote(save) {
+  if (_hnItem && save !== false) {
     _hnItem.notes = $('#hn-sheet-ta').value;
     saveToStorage();
   }
   $('#hn-sheet-card').classList.remove('open');
   setTimeout(() => { $('#hn-sheet').style.display = 'none'; }, 280);
-  _hnHorizon = null; _hnItem = null;
-  if (currentTab === 'horizons') renderHorizons();
+  const wasHorizon = !!_hnHorizon, cb = _notesOnDone;
+  _hnHorizon = null; _hnItem = null; _notesOnDone = null;
+  if (cb) cb();
+  else if (wasHorizon && currentTab === 'horizons') renderHorizons();
 }
 
 // ── Horizons render ────────────────────────────────────────────────────────────
@@ -6073,7 +6116,7 @@ function renderHorizons() {
 
     // Bullet list of items
     if (!Array.isArray(h.items)) h.items = [];
-    const itemsList = document.createElement('div'); itemsList.className = 'h-items-list';
+    const itemsList = document.createElement('div'); itemsList.className = 'h-items-list'; itemsList.dataset.hid = h.id;
 
     function renderItems() {
       itemsList.innerHTML = '';
@@ -6083,6 +6126,66 @@ function renderHorizons() {
       activeItems.forEach(item => {
         const row = document.createElement('div');
         row.className = 'h-item-row' + (item.notes ? ' h-item-has-notes' : '');
+        row.dataset.hiid = item.id;
+
+        const hDragHandle = document.createElement('span'); hDragHandle.className = 'h-item-drag'; hDragHandle.textContent = '⠿';
+        hDragHandle.addEventListener('pointerdown', ev => {
+          if (ev.button !== 0) return;
+          ev.preventDefault();
+          hDragHandle.setPointerCapture(ev.pointerId);
+          document.body.classList.add('dragging-active');
+          section.draggable = false;
+          const rR = row.getBoundingClientRect(), offX = ev.clientX - rR.left, offY = ev.clientY - rR.top;
+          const ghost = document.createElement('div'); ghost.className = 'drag-ghost';
+          ghost.style.cssText = `width:${Math.min(rR.width, 320)}px;left:${rR.left}px;top:${rR.top}px;`;
+          const gB = document.createElement('span'); gB.className = 'h-item-bullet';
+          const gT = document.createElement('div'); gT.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px;'; gT.textContent = item.text;
+          ghost.append(gB, gT); document.body.appendChild(ghost);
+          row.style.opacity = '0.3';
+          let hDropEl = null, dropHId = null, dropHiidBefore = null;
+          function onHMove(ev) {
+            ghost.style.left = (ev.clientX - offX) + 'px'; ghost.style.top = (ev.clientY - offY) + 'px';
+            if (hDropEl) { hDropEl.remove(); hDropEl = null; }
+            let targetList = null;
+            for (const lEl of $$('.h-items-list[data-hid]')) {
+              const lR = lEl.getBoundingClientRect();
+              if (ev.clientX >= lR.left && ev.clientX <= lR.right && ev.clientY >= lR.top - 24 && ev.clientY <= lR.bottom + 24) { targetList = lEl; break; }
+            }
+            if (!targetList) { dropHId = null; return; }
+            dropHId = +targetList.dataset.hid;
+            const listR = targetList.getBoundingClientRect();
+            const itemRows = [...targetList.querySelectorAll('.h-item-row:not(.h-item-archived)')].filter(r => r !== row);
+            let rowY = itemRows.length ? itemRows[itemRows.length-1].getBoundingClientRect().bottom - listR.top : 4;
+            dropHiidBefore = null;
+            for (const ir of itemRows) {
+              const irR = ir.getBoundingClientRect();
+              if (ev.clientY < irR.top + irR.height * 0.5) { dropHiidBefore = +ir.dataset.hiid; rowY = irR.top - listR.top; break; }
+              rowY = irR.bottom - listR.top;
+            }
+            hDropEl = document.createElement('div'); hDropEl.className = 'drop-indicator';
+            hDropEl.style.cssText = `top:${rowY}px;left:16px;right:8px;`;
+            targetList.appendChild(hDropEl);
+          }
+          function onHUp() {
+            document.body.classList.remove('dragging-active');
+            ghost.remove(); row.style.opacity = ''; if (hDropEl) { hDropEl.remove(); hDropEl = null; }
+            section.draggable = true;
+            document.removeEventListener('pointermove', onHMove); document.removeEventListener('pointerup', onHUp);
+            if (dropHId === null) return;
+            const targetH = horizons.find(hz => hz.id === dropHId);
+            if (!targetH) return;
+            const srcIdx = h.items.indexOf(item); if (srcIdx !== -1) h.items.splice(srcIdx, 1);
+            if (dropHiidBefore !== null) {
+              const at = targetH.items.findIndex(it => it.id === dropHiidBefore);
+              targetH.items.splice(at >= 0 ? at : targetH.items.length, 0, item);
+            } else {
+              const firstArch = targetH.items.findIndex(it => it.archived);
+              if (firstArch === -1) targetH.items.push(item); else targetH.items.splice(firstArch, 0, item);
+            }
+            saveToStorage(); renderHorizons();
+          }
+          document.addEventListener('pointermove', onHMove); document.addEventListener('pointerup', onHUp);
+        });
 
         const bullet = document.createElement('span'); bullet.className = 'h-item-bullet';
 
@@ -6109,7 +6212,7 @@ function renderHorizons() {
           ], hMoreBtn);
         });
 
-        row.append(bullet, textEl, hMoreBtn);
+        row.append(hDragHandle, bullet, textEl, hMoreBtn);
         itemsList.appendChild(row);
       });
 
@@ -6352,8 +6455,12 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'w' || e.key === 'W') && !e.metaKey && !e.ctrlKey && currentTab === 'schedule') {
     e.preventDefault(); setViewMode(viewMode === 'week' ? 'day' : 'week'); return;
   }
-  if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey && currentTab === 'schedule') {
-    e.preventDefault(); openAddModal();
+  if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey) {
+    e.preventDefault();
+    if (currentTab === 'schedule') { openAddModal(); return; }
+    if (currentTab === 'repeaters') { addNewRepeater(); return; }
+    if (currentTab === 'horizons') { _addHorizonSection(); return; }
+    if (currentTab === 'projects') { projSubTab === 'projects' ? _addProject() : _addFolder(); return; }
   }
   if ((e.key === 'd' || e.key === 'D') && !e.metaKey && !e.ctrlKey) {
     e.preventDefault();
