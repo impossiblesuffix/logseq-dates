@@ -961,7 +961,8 @@ body.tab-projects #btn-add-group { display: none; }
 }
 .folder-head:hover .folder-del { opacity: 1; }
 .folder-del:hover { color: #ef4444; }
-.folder-tasks { padding: 0 0 2px; }
+.project-tasks { position: relative; }
+.folder-tasks { position: relative; padding: 0 0 2px; }
 /* ── Project/Folder header tasks ───────────────────────────── */
 .ptask-outer.is-header { margin-top: 6px; }
 .ptask-outer.is-header .ptask-row {
@@ -5015,145 +5016,134 @@ function moveProjectTaskToSchedule(proj, pt) {
 }
 
 // ── Project task drag: drop on timeline or date panel ─────────────────────────
-function setupProjectTaskDrag(handle, row, proj, pt) {
+function setupProjectTaskDrag(handle, outer, proj, pt) {
   handle.addEventListener('pointerdown', e => {
     e.preventDefault();
     handle.setPointerCapture(e.pointerId);
     document.body.classList.add('dragging-active');
-    const rowR = row.getBoundingClientRect();
+    const rowR = outer.getBoundingClientRect();
     const offX = e.clientX - rowR.left, offY = e.clientY - rowR.top;
+    const startX = e.clientX;
 
-    const ghost = document.createElement('div');
-    ghost.className = 'drag-ghost';
+    // Build subtree
+    const ptIdx = proj.tasks.indexOf(pt);
+    const subtree = [pt];
+    for (let i = ptIdx + 1; i < proj.tasks.length; i++) {
+      if (proj.tasks[i].indent > pt.indent) subtree.push(proj.tasks[i]); else break;
+    }
+    const subtreeIds = new Set(subtree.map(t => t.id));
+
+    // Ghost
+    const ghost = document.createElement('div'); ghost.className = 'drag-ghost';
     ghost.style.cssText = `width:${rowR.width}px;left:${rowR.left}px;top:${rowR.top}px;`;
+    if (!pt.isHeader) { const gChk = document.createElement('div'); gChk.className = 'pill-chk' + (pt.done ? ' done' : ''); ghost.appendChild(gChk); }
     const gTxt = document.createElement('div');
     gTxt.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px;';
-    gTxt.textContent = pt.text;
-    ghost.append(gTxt);
+    gTxt.textContent = pt.text; ghost.appendChild(gTxt);
+    if (subtree.length > 1) { const badge = document.createElement('div'); badge.style.cssText = 'font-size:10px;color:#888;white-space:nowrap;flex-shrink:0;padding-left:4px;'; badge.textContent = `+${subtree.length - 1}`; ghost.appendChild(badge); }
     document.body.appendChild(ghost);
-    row.style.opacity = '0.3';
+    outer.style.opacity = '0.3';
+
+    // Drop indicator inside project-tasks
+    const taskListEl = outer.closest('.project-tasks');
+    const projDropEl = document.createElement('div'); projDropEl.className = 'drop-indicator'; projDropEl.style.display = 'none';
+    if (taskListEl) taskListEl.appendChild(projDropEl);
 
     let projTlPreview = null, projTlDropTime = null, projDropDate = null, projOverCal = false;
-    drag = { projDrag: true }; // blocks day-cell browse clicks
+    let projDropBeforeId = null, projDropIndent = pt.indent;
+    drag = { projDrag: true };
 
     function onMove(e) {
       ghost.style.left = (e.clientX - offX) + 'px';
       ghost.style.top  = (e.clientY - offY) + 'px';
-
       const tlRect = $('#tl-panel').getBoundingClientRect();
-      const tpRect = $('#task-panel').getBoundingClientRect();
 
-      // ── Over timeline → snap to time ───────────────────────────────────
       if (e.clientX >= tlRect.left && e.clientX <= tlRect.right) {
-        projDropDate = null; projOverCal = false;
+        projDropEl.style.display = 'none'; projDropDate = null; projOverCal = false;
         $$('.week-col.week-drag-over').forEach(c => c.classList.remove('week-drag-over'));
-        const relY = e.clientY - tlRect.top;
-        const snapMins = Math.max(_renderStart, Math.min(tlEnd - 15,
-          Math.round(yToMins(Math.max(0, relY)) / 5) * 5));
+        const snapMins = Math.max(_renderStart, Math.min(tlEnd - 15, Math.round(yToMins(Math.max(0, e.clientY - tlRect.top)) / 5) * 5));
         projTlDropTime = minsToTime(snapMins);
-        const snapY = minsToY(snapMins);
-        if (!projTlPreview) {
-          projTlPreview = document.createElement('div');
-          projTlPreview.className = 'tl-bar preview';
-          $('#tl-panel').appendChild(projTlPreview);
-        }
-        projTlPreview.style.top    = snapY + 'px';
-        projTlPreview.style.height = (minsToY(snapMins + 30) - snapY) + 'px';
+        if (!projTlPreview) { projTlPreview = document.createElement('div'); projTlPreview.className = 'tl-bar preview'; $('#tl-panel').appendChild(projTlPreview); }
+        projTlPreview.style.top = minsToY(snapMins) + 'px';
+        projTlPreview.style.height = (minsToY(snapMins + 30) - minsToY(snapMins)) + 'px';
         projTlPreview.style.background = 'var(--accent)';
-        $$('.day-cell.drag-over').forEach(d => d.classList.remove('drag-over'));
-        showTip(projTlDropTime, e.clientX, e.clientY);
-        return;
+        showTip(projTlDropTime, e.clientX, e.clientY); return;
       }
+      if (projTlPreview) { projTlPreview.remove(); projTlPreview = null; } projTlDropTime = null;
 
-      if (projTlPreview) { projTlPreview.remove(); projTlPreview = null; }
-      projTlDropTime = null;
-
-      // ── Cal button → highlight ─────────────────────────────────────────
-      const calBtn2 = $('#btn-cal-toggle');
-      const calR2 = calBtn2.getBoundingClientRect();
-      const overCal2 = e.clientX>=calR2.left&&e.clientX<=calR2.right&&e.clientY>=calR2.top&&e.clientY<=calR2.bottom;
-      calBtn2.classList.toggle('drag-over-cal', overCal2);
-      projOverCal = overCal2;
-      ghost.style.opacity = overCal2 ? '0.4' : '0.93';
-      hideTip();
-
-      // ── Week column or task panel → date-only ──────────────────────────
+      const calBtn2 = $('#btn-cal-toggle'), calR2 = calBtn2.getBoundingClientRect();
+      projOverCal = e.clientX>=calR2.left&&e.clientX<=calR2.right&&e.clientY>=calR2.top&&e.clientY<=calR2.bottom;
+      calBtn2.classList.toggle('drag-over-cal', projOverCal);
+      ghost.style.opacity = projOverCal ? '0.4' : '0.93'; hideTip();
       $$('.week-col.week-drag-over').forEach(c => c.classList.remove('week-drag-over'));
       projDropDate = null;
-      if (!overCal2) {
+      if (!projOverCal) {
         for (const col of $$('.week-col')) {
           const r = col.getBoundingClientRect();
-          if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) {
-            col.classList.add('week-drag-over'); projDropDate = col.dataset.date;
-            ghost.style.opacity = '0.7'; break;
-          }
+          if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) { col.classList.add('week-drag-over'); projDropDate = col.dataset.date; ghost.style.opacity = '0.7'; break; }
         }
         if (!projDropDate && currentTab === 'schedule' && viewMode === 'day') {
           const tp = $('#task-panel');
-          if (tp && tp.offsetParent !== null) {
-            const r = tp.getBoundingClientRect();
-            if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) {
-              projDropDate = viewDate || todayStr(); ghost.style.opacity = '0.7';
-            }
-          }
+          if (tp && tp.offsetParent !== null) { const r = tp.getBoundingClientRect(); if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) { projDropDate = viewDate || todayStr(); ghost.style.opacity = '0.7'; } }
         }
+      }
+
+      // ── In-project reorder ─────────────────────────────────────────────
+      if (!projTlDropTime && !projDropDate && !projOverCal && taskListEl) {
+        const listR = taskListEl.getBoundingClientRect();
+        const allRows = [...taskListEl.querySelectorAll('[data-ptid]')];
+        let beforeId = null, rowY = allRows.length ? allRows[allRows.length-1].getBoundingClientRect().bottom - listR.top : listR.height;
+        for (const r of allRows) {
+          if (subtreeIds.has(+r.dataset.ptid)) continue;
+          const rR = r.getBoundingClientRect();
+          if (e.clientY < rR.top + rR.height * 0.5) { beforeId = +r.dataset.ptid; rowY = rR.top - listR.top; break; }
+          rowY = rR.bottom - listR.top;
+        }
+        projDropBeforeId = beforeId;
+        const dx = e.clientX - startX;
+        const beforeIdx = beforeId === null ? proj.tasks.length : proj.tasks.findIndex(t => t.id === beforeId);
+        let prevVis = null; for (let k = beforeIdx - 1; k >= 0; k--) { if (!subtreeIds.has(proj.tasks[k].id)) { prevVis = proj.tasks[k]; break; } }
+        const maxI = prevVis ? prevVis.indent + 1 : 0;
+        projDropIndent = Math.max(0, Math.min(maxI, pt.indent + Math.round(dx / INDENT_W)));
+        projDropEl.style.cssText = `top:${rowY}px;left:${12 + projDropIndent * INDENT_W}px;right:8px;display:block;`;
+      } else {
+        projDropEl.style.display = 'none';
       }
     }
 
     function onUp(e) {
       document.body.classList.remove('dragging-active');
-      ghost.remove(); row.style.opacity = '';
+      ghost.remove(); outer.style.opacity = ''; projDropEl.remove();
       if (projTlPreview) { projTlPreview.remove(); projTlPreview = null; }
       $$('.day-cell.drag-over').forEach(d => d.classList.remove('drag-over'));
       $$('.week-col.week-drag-over').forEach(c => c.classList.remove('week-drag-over'));
       $('#btn-cal-toggle').classList.remove('drag-over-cal');
-      hideTip(); hideMiniGhost();
+      hideTip(); hideMiniGhost(); drag = null;
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
-      drag = null;
 
       if (projOverCal) {
-        // ── Dropped on cal button → move task to schedule, open date picker ─
-        proj.tasks = proj.tasks.filter(t => t.id !== pt.id);
-        const newTask = {
-          id: ++uid, text: pt.text, isHeader: false, done: pt.done,
-          indent: pt.indent, color: null, sched: null, notes: pt.notes || ''
-        };
-        tasks.push(newTask);
-        saveToStorage();
-        switchTab('schedule');
-        datePanelTarget = newTask;
-        openDatePanel($('#btn-cal-toggle'));
+        proj.tasks = proj.tasks.filter(t => !subtreeIds.has(t.id));
+        const newTask = { id: ++uid, text: pt.text, isHeader: false, done: pt.done, indent: pt.indent, color: null, sched: null, notes: pt.notes || '' };
+        tasks.push(newTask); saveToStorage(); switchTab('schedule'); datePanelTarget = newTask; openDatePanel($('#btn-cal-toggle')); return;
+      }
+      if (projTlDropTime || projDropDate) {
+        proj.tasks = proj.tasks.filter(t => !subtreeIds.has(t.id));
+        const color = projTlDropTime ? '#9898b4' : null;
+        const schedDate = projTlDropTime ? (viewDate && viewDate !== todayStr() ? viewDate : null) : projDropDate;
+        const newSched = projTlDropTime ? { t: projTlDropTime, m: 30, ...(schedDate ? { date: schedDate } : {}) } : { date: projDropDate };
+        const newTask = { id: ++uid, text: pt.text, isHeader: false, done: pt.done, indent: pt.indent, color, sched: newSched, notes: pt.notes || '' };
+        tasks.push(newTask); if (projDropDate) closeDatePanel(); saveToStorage(); switchTab('schedule');
+        if (projTlDropTime) { const dropY = e.clientY; requestAnimationFrame(() => requestAnimationFrame(() => { const bar = $(`.tl-bar[data-id="${newTask.id}"]`) || $(`.tl-tick-event[data-id="${newTask.id}"]`); if (bar) startBottomResize(bar, newTask, dropY, 0); })); }
         return;
       }
-
-      if (projTlDropTime || projDropDate) {
-        proj.tasks = proj.tasks.filter(t => t.id !== pt.id);
-        const color = projTlDropTime ? '#9898b4' : null;
-        const schedDate = projTlDropTime
-          ? (viewDate && viewDate !== todayStr() ? viewDate : null)
-          : projDropDate;
-        const newSched = projTlDropTime
-          ? { t: projTlDropTime, m: 30, ...(schedDate ? { date: schedDate } : {}) }
-          : { date: projDropDate };
-        const newTask = {
-          id: ++uid, text: pt.text, isHeader: false, done: pt.done,
-          indent: pt.indent, color, sched: newSched, notes: pt.notes || ''
-        };
-        tasks.push(newTask);
-        if (projDropDate) closeDatePanel();
-        saveToStorage();
-        switchTab('schedule');
-        // Let user drag-resize duration after dropping on timeline
-        if (projTlDropTime) {
-          const dropY = e.clientY;
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            const bar = $(`.tl-bar[data-id="${newTask.id}"]`) ||
-                        $(`.tl-tick-event[data-id="${newTask.id}"]`);
-            if (bar) startBottomResize(bar, newTask, dropY, 0);
-          }));
-        }
-      }
+      // ── In-project reorder ─────────────────────────────────────────────
+      const delta = projDropIndent - pt.indent;
+      subtree.forEach((t, i) => { t.indent = i === 0 ? projDropIndent : Math.max(0, t.indent + delta); });
+      proj.tasks = proj.tasks.filter(t => !subtreeIds.has(t.id));
+      if (projDropBeforeId === null) { proj.tasks.push(...subtree); }
+      else { const at = proj.tasks.findIndex(t => t.id === projDropBeforeId); proj.tasks.splice(at >= 0 ? at : proj.tasks.length, 0, ...subtree); }
+      saveToStorage(); renderProjects();
     }
 
     document.addEventListener('pointermove', onMove);
@@ -5201,7 +5191,7 @@ function renderDrawerProjects() {
         txt.contentEditable = 'true'; txt.spellcheck = false; txt.textContent = pt.text;
         txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); });
         setupProjectTaskDrag(handle, row, proj, pt);
-        row.append(handle, chk, txt);
+        row.append(handle, chk, txt); // drawer: row doubles as outer
         taskList.appendChild(row);
       }
       block.appendChild(taskList);
@@ -5210,27 +5200,51 @@ function renderDrawerProjects() {
   }
 }
 
-function setupFolderTaskDrag(handle, task) {
+function setupFolderTaskDrag(handle, ft, folder, dragEl) {
   handle.addEventListener('pointerdown', e => {
     e.preventDefault();
     handle.setPointerCapture(e.pointerId);
     document.body.classList.add('dragging-active');
-    const rowR = (handle.closest('.ftask-outer') || handle.closest('.ftask-row')).getBoundingClientRect();
+    const rowR = dragEl.getBoundingClientRect();
     const offX = e.clientX - rowR.left, offY = e.clientY - rowR.top;
+    const startX = e.clientX;
+
+    // Build subtree from folder tasks
+    const folderTasks = tasks.filter(t => t.folderId === folder.id);
+    const ftIdx = folderTasks.indexOf(ft);
+    const subtree = [ft];
+    for (let i = ftIdx + 1; i < folderTasks.length; i++) {
+      if (folderTasks[i].indent > ft.indent) subtree.push(folderTasks[i]); else break;
+    }
+    const subtreeIds = new Set(subtree.map(t => t.id));
+
+    // Ghost
     const ghost = document.createElement('div'); ghost.className = 'drag-ghost';
     ghost.style.cssText = `width:${rowR.width}px;left:${rowR.left}px;top:${rowR.top}px;`;
+    if (!ft.isHeader) { const gChk = document.createElement('div'); gChk.className = 'pill-chk' + (ft.done ? ' done' : ''); ghost.appendChild(gChk); }
     const gTxt = document.createElement('div');
     gTxt.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px;';
-    gTxt.textContent = task.text; ghost.append(gTxt);
+    gTxt.textContent = ft.text; ghost.appendChild(gTxt);
+    if (subtree.length > 1) { const badge = document.createElement('div'); badge.style.cssText = 'font-size:10px;color:#888;white-space:nowrap;flex-shrink:0;padding-left:4px;'; badge.textContent = `+${subtree.length - 1}`; ghost.appendChild(badge); }
     document.body.appendChild(ghost);
+    dragEl.style.opacity = '0.3';
+
+    // Drop indicator inside folder-tasks
+    const taskListEl = dragEl.closest('.folder-tasks');
+    const fDropEl = document.createElement('div'); fDropEl.className = 'drop-indicator'; fDropEl.style.display = 'none';
+    if (taskListEl) taskListEl.appendChild(fDropEl);
+
     let tlPreview = null, tlDropTime = null, overCal = false, weekDropDate = null;
+    let fDropBeforeId = null, fDropIndent = ft.indent;
     drag = { projDrag: true };
+
     function onMove(e) {
       ghost.style.left = (e.clientX - offX) + 'px';
       ghost.style.top  = (e.clientY - offY) + 'px';
       const tlRect = $('#tl-panel').getBoundingClientRect();
+
       if (e.clientX >= tlRect.left && e.clientX <= tlRect.right) {
-        overCal = false; weekDropDate = null;
+        fDropEl.style.display = 'none'; overCal = false; weekDropDate = null;
         $$('.week-col.week-drag-over').forEach(c => c.classList.remove('week-drag-over'));
         const snapMins = Math.max(_renderStart, Math.min(tlEnd - 15, Math.round(yToMins(Math.max(0, e.clientY - tlRect.top)) / 5) * 5));
         tlDropTime = minsToTime(snapMins);
@@ -5241,49 +5255,73 @@ function setupFolderTaskDrag(handle, task) {
         showTip(tlDropTime, e.clientX, e.clientY); return;
       }
       if (tlPreview) { tlPreview.remove(); tlPreview = null; } tlDropTime = null;
+
       const calBtn = $('#btn-cal-toggle'), calR = calBtn.getBoundingClientRect();
       overCal = e.clientX>=calR.left&&e.clientX<=calR.right&&e.clientY>=calR.top&&e.clientY<=calR.bottom;
       calBtn.classList.toggle('drag-over-cal', overCal);
       ghost.style.opacity = overCal ? '0.4' : '0.93'; hideTip();
-      // ── Week column → date-only ────────────────────────────────────────
       $$('.week-col.week-drag-over').forEach(c => c.classList.remove('week-drag-over'));
       weekDropDate = null;
       if (!overCal) {
         for (const col of $$('.week-col')) {
-          const r = col.getBoundingClientRect();
-          if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) {
-            col.classList.add('week-drag-over'); weekDropDate = col.dataset.date;
-            ghost.style.opacity = '0.7'; break;
-          }
+          const r = col.getBoundingClientRect(); if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) { col.classList.add('week-drag-over'); weekDropDate = col.dataset.date; ghost.style.opacity = '0.7'; break; }
         }
-        // ── Task panel (day view) → today/viewDate, no time ────────────────
         if (!weekDropDate && currentTab === 'schedule' && viewMode === 'day') {
-          const tp = $('#task-panel');
-          if (tp && tp.offsetParent !== null) {
-            const r = tp.getBoundingClientRect();
-            if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) {
-              weekDropDate = viewDate || todayStr();
-              ghost.style.opacity = '0.7';
-            }
-          }
+          const tp = $('#task-panel'); if (tp && tp.offsetParent !== null) { const r = tp.getBoundingClientRect(); if (e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom) { weekDropDate = viewDate || todayStr(); ghost.style.opacity = '0.7'; } }
         }
       }
+
+      // ── In-folder reorder ──────────────────────────────────────────────
+      if (!tlDropTime && !weekDropDate && !overCal && taskListEl) {
+        const listR = taskListEl.getBoundingClientRect();
+        const allRows = [...taskListEl.querySelectorAll('[data-ftid]')];
+        let beforeId = null, rowY = allRows.length ? allRows[allRows.length-1].getBoundingClientRect().bottom - listR.top : listR.height;
+        for (const r of allRows) {
+          if (subtreeIds.has(+r.dataset.ftid)) continue;
+          const rR = r.getBoundingClientRect();
+          if (e.clientY < rR.top + rR.height * 0.5) { beforeId = +r.dataset.ftid; rowY = rR.top - listR.top; break; }
+          rowY = rR.bottom - listR.top;
+        }
+        fDropBeforeId = beforeId;
+        const dx = e.clientX - startX;
+        const curFolderTasks = tasks.filter(t => t.folderId === folder.id);
+        const beforeIdx = beforeId === null ? curFolderTasks.length : curFolderTasks.findIndex(t => t.id === beforeId);
+        let prevVis = null; for (let k = beforeIdx - 1; k >= 0; k--) { if (!subtreeIds.has(curFolderTasks[k].id)) { prevVis = curFolderTasks[k]; break; } }
+        const maxI = prevVis ? prevVis.indent + 1 : 0;
+        fDropIndent = Math.max(0, Math.min(maxI, ft.indent + Math.round(dx / INDENT_W)));
+        fDropEl.style.cssText = `top:${rowY}px;left:${8 + fDropIndent * INDENT_W}px;right:8px;display:block;`;
+      } else {
+        fDropEl.style.display = 'none';
+      }
     }
+
     function onUp(e) {
       document.body.classList.remove('dragging-active');
-      ghost.remove(); if (tlPreview) { tlPreview.remove(); tlPreview = null; }
+      ghost.remove(); dragEl.style.opacity = ''; fDropEl.remove();
+      if (tlPreview) { tlPreview.remove(); tlPreview = null; }
       $$('.week-col.week-drag-over').forEach(c => c.classList.remove('week-drag-over'));
       $('#btn-cal-toggle').classList.remove('drag-over-cal');
       hideTip(); drag = null;
       document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp);
-      if (overCal) { datePanelTarget = task; openDatePanel($('#btn-cal-toggle')); return; }
-      if (weekDropDate) { task.sched = { date: weekDropDate }; saveToStorage(); rerender(); return; }
-      if (tlDropTime) {
-        task.sched = { t: tlDropTime, m: 30 };
-        if (viewDate && viewDate !== todayStr()) task.sched.date = viewDate;
-        saveToStorage(); rerender();
+
+      if (overCal) { datePanelTarget = ft; openDatePanel($('#btn-cal-toggle')); return; }
+      if (weekDropDate) { ft.sched = { date: weekDropDate }; saveToStorage(); rerender(); return; }
+      if (tlDropTime) { ft.sched = { t: tlDropTime, m: 30 }; if (viewDate && viewDate !== todayStr()) ft.sched.date = viewDate; saveToStorage(); rerender(); return; }
+
+      // ── In-folder reorder ──────────────────────────────────────────────
+      const dropBeforeTask = fDropBeforeId === null ? null : tasks.find(t => t.id === fDropBeforeId);
+      const delta = fDropIndent - ft.indent;
+      subtree.forEach((t, i) => { t.indent = i === 0 ? fDropIndent : Math.max(0, t.indent + delta); });
+      tasks = tasks.filter(t => !subtreeIds.has(t.id));
+      if (dropBeforeTask !== null) {
+        const at = tasks.indexOf(dropBeforeTask); tasks.splice(at >= 0 ? at : tasks.length, 0, ...subtree);
+      } else {
+        let lastIdx = -1; for (let i = tasks.length - 1; i >= 0; i--) { if (tasks[i].folderId === folder.id) { lastIdx = i; break; } }
+        tasks.splice(lastIdx + 1, 0, ...subtree);
       }
+      saveToStorage(); renderFolders();
     }
+
     document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp);
   });
 }
@@ -5471,7 +5509,9 @@ function renderFolders(container) {
               { label: 'Delete', danger: true, fn: () => { tasks = tasks.filter(t => t.id !== ft.id); saveToStorage(); renderFolders(); } }
             ], moreBtn);
           });
-          row.append(chev, txt, moreBtn);
+          const fhHandle = document.createElement('div'); fhHandle.className = 'drag-handle'; fhHandle.innerHTML = '⠿';
+          setupFolderTaskDrag(fhHandle, ft, folder, row);
+          row.append(fhHandle, chev, txt, moreBtn);
           taskList.appendChild(row);
         } else {
           if (hideCompleted && ft.done) continue;
@@ -5480,7 +5520,7 @@ function renderFolders(container) {
           outer.dataset.ftid = ft.id;
           const row = document.createElement('div'); row.className = 'ftask-row';
           const ftHandle = document.createElement('div'); ftHandle.className = 'drag-handle'; ftHandle.innerHTML = '⠿';
-          setupFolderTaskDrag(ftHandle, ft);
+          setupFolderTaskDrag(ftHandle, ft, folder, outer);
           const chk = document.createElement('div'); chk.className = 'pill-chk' + (ft.done ? ' done' : '');
           chk.addEventListener('click', () => { ft.done = !ft.done; saveToStorage(); renderFolders(); });
           const txt = document.createElement('div'); txt.className = 'ptask-text' + (ft.done ? ' done' : '');
@@ -5701,8 +5741,10 @@ function renderProjects() {
               { label: 'Delete', danger: true, fn: () => { proj.tasks.splice(i, 1); saveToStorage(); renderProjects(); } }
             ], menuBtn);
           });
+          const ptHdrHandle = document.createElement('div'); ptHdrHandle.className = 'drag-handle'; ptHdrHandle.innerHTML = '⠿';
+          setupProjectTaskDrag(ptHdrHandle, outer, proj, pt);
           row.append(chev, txt, menuBtn);
-          outer.append(row);
+          outer.append(ptHdrHandle, row);
           taskList.appendChild(outer);
         } else {
           // ── Regular task ──
