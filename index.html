@@ -1969,6 +1969,8 @@ body.dark .task-ctx-item:active { background: #28283c; }
 }
 .sched-dur-preset:hover { border-color: #a1a1aa; }
 .sched-dur-preset.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sched-custom-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.sched-custom-label { font-size: 12px; color: #a0a0b0; font-weight: 600; flex: 1; }
 .sched-modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
 body.dark .sched-dur-preset { background: #26262e; border-color: #36363e; color: #808090; }
 body.dark .sched-dur-preset.active { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -2450,7 +2452,11 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
         <button class="sched-dur-preset" data-mins="60">1h</button>
         <button class="sched-dur-preset" data-mins="90">1.5h</button>
         <button class="sched-dur-preset" data-mins="120">2h</button>
-        <input type="number" id="sched-dur-custom" class="modal-dur-input" placeholder="min" min="0" max="480" step="5" title="Custom minutes">
+      </div>
+      <div class="sched-custom-row">
+        <span class="sched-custom-label">Custom</span>
+        <input type="number" id="sched-dur-custom" class="modal-dur-input" placeholder="–" min="0" max="1440" step="5" style="width:64px">
+        <span class="modal-dur-unit">min</span>
       </div>
     </div>
     <div class="sched-modal-actions">
@@ -4818,9 +4824,9 @@ function openTaskMenu(task, anchorEl) {
   _taskMenuEl = menu;
 
   const items = [];
+  items.push({ label: task.sched?.t ? 'Edit schedule' : 'Set time', fn: () => openSchedModal(task) });
+  if (task.sched?.t) items.push({ label: 'Remove time', fn: () => unscheduleTask(task) });
   if (!task.isHeader) {
-    items.push({ label: task.sched?.t ? 'Edit schedule' : 'Set time', fn: () => openSchedModal(task) });
-    if (task.sched?.t) items.push({ label: 'Remove time', fn: () => unscheduleTask(task) });
     items.push({ label: task.sched?.date ? 'Change date' : 'Set date', fn: () => { datePanelTarget = task; openDatePanel(anchorEl); } });
     items.push({ label: task.notes ? 'Edit notes' : 'Add notes', fn: () => openNotesModal(task, () => rerender()) });
     items.push({ label: task.repeat ? 'Edit repeat' : 'Set repeat', fn: () => openRepeatModal(task) });
