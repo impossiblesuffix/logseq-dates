@@ -5426,6 +5426,7 @@ function renderFolders(container) {
           const row = document.createElement('div');
           row.className = 'ftask-row is-group';
           row.style.paddingLeft = (8 + ft.indent * INDENT_W) + 'px';
+          row.dataset.ftid = ft.id;
           const hasKids = fHasChildren(ftIdx), isCollapsed = fCollapsedSet.has(ft.id);
           const chev = document.createElement('span'); chev.className = 'fgroup-chev' + (hasKids ? ' clickable' : '');
           chev.textContent = isCollapsed ? '▸' : '▾';
@@ -5437,7 +5438,31 @@ function renderFolders(container) {
           }
           const txt = document.createElement('div'); txt.className = 'ftask-group-text';
           txt.contentEditable = 'true'; txt.spellcheck = false; txt.textContent = ft.text;
-          txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
+          txt.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              e.preventDefault(); txt.blur();
+              const newFtH = { id: ++uid, text: '', isHeader: false, done: false, indent: ft.indent, color: null, sched: null, notes: '', folderId: folder.id };
+              tasks.splice(tasks.indexOf(ft) + 1, 0, newFtH);
+              saveToStorage(); renderFolders();
+              setTimeout(() => {
+                const el = $(`.folder-block[data-fid="${folder.id}"] .ftask-outer[data-ftid="${newFtH.id}"] .ptask-text`);
+                if (el) { el.contentEditable = 'true'; el.focus(); }
+              }, 30);
+            }
+            if (e.key === 'Tab') {
+              e.preventDefault(); txt.blur();
+              const fhTabIdx = folderTasks.indexOf(ft);
+              const prevFtHTab = fhTabIdx > 0 ? folderTasks[fhTabIdx - 1] : null;
+              const maxFHI = prevFtHTab ? prevFtHTab.indent + 1 : 0;
+              ft.indent = e.shiftKey ? Math.max(0, ft.indent - 1) : Math.min(maxFHI, ft.indent + 1);
+              saveToStorage(); renderFolders();
+              setTimeout(() => {
+                const el = $(`.folder-block[data-fid="${folder.id}"] .ftask-row[data-ftid="${ft.id}"] .ftask-group-text`);
+                if (el) { el.focus(); placeCaretAtEnd(el); }
+              }, 30);
+            }
+            if (e.key === 'Escape') txt.blur();
+          });
           txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); });
           const moreBtn = document.createElement('button'); moreBtn.className = 'h-item-more'; moreBtn.textContent = '⋯';
           moreBtn.addEventListener('click', e => {
@@ -5452,6 +5477,7 @@ function renderFolders(container) {
           if (hideCompleted && ft.done) continue;
           const outer = document.createElement('div'); outer.className = 'ftask-outer';
           outer.style.paddingLeft = (8 + ft.indent * INDENT_W) + 'px';
+          outer.dataset.ftid = ft.id;
           const row = document.createElement('div'); row.className = 'ftask-row';
           const ftHandle = document.createElement('div'); ftHandle.className = 'drag-handle'; ftHandle.innerHTML = '⠿';
           setupFolderTaskDrag(ftHandle, ft);
@@ -5460,7 +5486,43 @@ function renderFolders(container) {
           const txt = document.createElement('div'); txt.className = 'ptask-text' + (ft.done ? ' done' : '');
           txt.contentEditable = 'false'; txt.spellcheck = false; txt.textContent = ft.text;
           txt.addEventListener('click', () => { if (txt.contentEditable === 'false') { txt.contentEditable = 'true'; txt.focus(); placeCaretAtEnd(txt); } });
-          txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
+          txt.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              e.preventDefault(); txt.blur();
+              const newFt = { id: ++uid, text: '', isHeader: false, done: false, indent: ft.indent, color: null, sched: null, notes: '', folderId: folder.id };
+              tasks.splice(tasks.indexOf(ft) + 1, 0, newFt);
+              saveToStorage(); renderFolders();
+              setTimeout(() => {
+                const el = $(`.folder-block[data-fid="${folder.id}"] .ftask-outer[data-ftid="${newFt.id}"] .ptask-text`);
+                if (el) { el.contentEditable = 'true'; el.focus(); }
+              }, 30);
+            }
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              const ftTabIdx = folderTasks.indexOf(ft);
+              const prevFtTab = ftTabIdx > 0 ? folderTasks[ftTabIdx - 1] : null;
+              const maxFI = prevFtTab ? prevFtTab.indent + 1 : 0;
+              ft.indent = e.shiftKey ? Math.max(0, ft.indent - 1) : Math.min(maxFI, ft.indent + 1);
+              saveToStorage(); renderFolders();
+              setTimeout(() => {
+                const el = $(`.folder-block[data-fid="${folder.id}"] .ftask-outer[data-ftid="${ft.id}"] .ptask-text`);
+                if (el) { el.contentEditable = 'true'; el.focus(); placeCaretAtEnd(el); }
+              }, 30);
+            }
+            if (e.key === 'Backspace' && !txt.textContent) {
+              e.preventDefault();
+              const ftBsIdx = folderTasks.indexOf(ft);
+              if (folderTasks.length > 1) {
+                const prevFtBs = ftBsIdx > 0 ? folderTasks[ftBsIdx - 1] : null;
+                tasks = tasks.filter(t => t.id !== ft.id); saveToStorage(); renderFolders();
+                if (prevFtBs && !prevFtBs.isHeader) setTimeout(() => {
+                  const el = $(`.folder-block[data-fid="${folder.id}"] .ftask-outer[data-ftid="${prevFtBs.id}"] .ptask-text`);
+                  if (el) { el.contentEditable = 'true'; el.focus(); placeCaretAtEnd(el); }
+                }, 30);
+              }
+            }
+            if (e.key === 'Escape') txt.blur();
+          });
           txt.addEventListener('focus', () => { _editingActive = true; });
           txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
 
@@ -5592,6 +5654,7 @@ function renderProjects() {
           // ── Header row ──
           const outer = document.createElement('div'); outer.className = 'ptask-outer is-header';
           outer.style.paddingLeft = (12 + pt.indent * INDENT_W) + 'px';
+          outer.dataset.ptid = pt.id;
           const row = document.createElement('div'); row.className = 'ptask-row';
           const hasKids = pHasChildren(i), isCollapsed = collapsedSet.has(pt.id);
           const chev = document.createElement('span');
@@ -5609,7 +5672,7 @@ function renderProjects() {
           txt.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
               e.preventDefault(); txt.blur();
-              const next = { id: ++pUid, text: '', done: false, indent: Math.min(pt.indent + 1, 4), notes: '' };
+              const next = { id: ++pUid, text: '', done: false, indent: pt.indent, notes: '' };
               proj.tasks.splice(i + 1, 0, next); saveToStorage(); renderProjects();
               setTimeout(() => {
                 const el = $(`.project-block[data-pid="${proj.id}"] .ptask-outer[data-ptid="${next.id}"] .ptask-text`);
@@ -5622,6 +5685,10 @@ function renderProjects() {
               const maxPI = prevPt ? prevPt.indent + 1 : 0;
               pt.indent = e.shiftKey ? Math.max(0, pt.indent - 1) : Math.min(maxPI, pt.indent + 1);
               saveToStorage(); renderProjects();
+              setTimeout(() => {
+                const el = $(`.project-block[data-pid="${proj.id}"] .ptask-outer[data-ptid="${pt.id}"] .ptask-header-label`);
+                if (el) { el.contentEditable = 'true'; el.focus(); placeCaretAtEnd(el); }
+              }, 30);
             }
             if (e.key === 'Escape') txt.blur();
           });
