@@ -962,6 +962,36 @@ body.tab-projects #btn-add-group { display: none; }
 .folder-head:hover .folder-del { opacity: 1; }
 .folder-del:hover { color: #ef4444; }
 .folder-tasks { padding: 0 0 2px; }
+/* ── Project/Folder header tasks ───────────────────────────── */
+.ptask-outer.is-header { margin-top: 6px; }
+.ptask-outer.is-header .ptask-row {
+  background: none !important; border-color: transparent !important; padding-left: 0;
+}
+.ptask-outer.is-header .ptask-row:hover { background: rgba(0,0,0,.03) !important; border-radius: 6px; }
+.ptask-header-chev {
+  flex-shrink: 0; font-size: 10px; color: #b0b0bc; padding: 0 2px; line-height: 1; cursor: default;
+}
+.ptask-header-chev.clickable { cursor: pointer; }
+.ptask-header-chev.clickable:hover { color: var(--accent); }
+.ptask-header-label {
+  flex: 1; min-width: 0; outline: none;
+  font-size: var(--fs-sub, 11px); font-weight: 700; color: #52525b;
+  letter-spacing: .4px; text-transform: uppercase; cursor: text;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ptask-header-label:focus { white-space: normal; overflow: visible; }
+body.dark .ptask-outer.is-header .ptask-row { background: none !important; border-color: transparent !important; }
+body.dark .ptask-outer.is-header .ptask-row:hover { background: rgba(255,255,255,.03) !important; }
+body.dark .ptask-header-chev { color: #38384a; }
+body.dark .ptask-header-label { color: #606072; }
+/* Folder group collapse chevron */
+.fgroup-chev {
+  flex-shrink: 0; font-size: 10px; color: #b0b0bc; padding: 0 2px; line-height: 1; cursor: default;
+}
+.fgroup-chev.clickable { cursor: pointer; }
+.fgroup-chev.clickable:hover { color: var(--accent); }
+body.dark .fgroup-chev { color: #38384a; }
+
 /* outer wrapper for non-group folder tasks */
 .ftask-outer {
   display: flex; align-items: center; gap: 3px;
@@ -2127,7 +2157,7 @@ body.dark .modal-type-btn { color: #585868; }
 body.dark .modal-type-btn.active { background: #32323e; color: #c0c0d0; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
 body.dark .modal-btn { border-color: #36363e; color: #808090; background: #26262e; }
 body.dark .modal-btn:hover { background: #2e2e36; color: #c0c0d0; border-color: #424252; }
-body.dark .modal-btn.primary { background: var(--accent); border-color: var(--accent); }
+body.dark .modal-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 body.dark .modal-btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
 body.dark #notes-textarea { background: #26262e; border-color: #36363e; color: #c8c8d0; }
 body.dark #notes-textarea:focus { border-color: var(--accent); }
@@ -2505,8 +2535,8 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
     <div style="font-size:12px;font-weight:600;color:#888;margin-bottom:6px;letter-spacing:.05em">ADD TO</div>
     <div id="qa-picker" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="qa-cancel" class="btn-secondary" style="padding:7px 14px">Cancel</button>
-      <button id="qa-confirm" class="btn-primary" style="padding:7px 18px">Add</button>
+      <button id="qa-cancel" class="modal-btn">Cancel</button>
+      <button id="qa-confirm" class="modal-btn primary">Add</button>
     </div>
   </div>
 </div>
@@ -5058,7 +5088,7 @@ function setupProjectTaskDrag(handle, row, proj, pt) {
             ghost.style.opacity = '0.7'; break;
           }
         }
-        if (!projDropDate) {
+        if (!projDropDate && currentTab === 'schedule' && viewMode === 'day') {
           const tp = $('#task-panel');
           if (tp && tp.offsetParent !== null) {
             const r = tp.getBoundingClientRect();
@@ -5227,7 +5257,7 @@ function setupFolderTaskDrag(handle, task) {
           }
         }
         // ── Task panel (day view) → today/viewDate, no time ────────────────
-        if (!weekDropDate) {
+        if (!weekDropDate && currentTab === 'schedule' && viewMode === 'day') {
           const tp = $('#task-panel');
           if (tp && tp.offsetParent !== null) {
             const r = tp.getBoundingClientRect();
@@ -5349,6 +5379,12 @@ function renderFolders(container) {
     moreBtn.addEventListener('click', e => {
       e.stopPropagation();
       openSectionMenu([
+        { label: 'Add header', fn: () => {
+          folder.collapsed = false;
+          tasks.push({ id: ++uid, text: '', isHeader: true, done: false, indent: 0, color: null, sched: null, notes: '', folderId: folder.id });
+          saveToStorage(); renderFolders();
+          setTimeout(() => { const all = $$(`.folder-block[data-fid="${folder.id}"] .ftask-group-text`); const l=all[all.length-1]; if(l){l.focus();document.execCommand('selectAll',false,null);} }, 30);
+        }},
         { label: 'Delete', danger: true, fn: () => {
           const count = tasks.filter(t => t.folderId === folder.id).length;
           if (count === 0 || confirm(`Delete "${folder.name}" and its ${count} task(s)?`)) {
@@ -5364,24 +5400,56 @@ function renderFolders(container) {
 
     if (!folder.collapsed) {
       const folderTasks = tasks.filter(t => t.folderId === folder.id);
+      const fCollapsedSet = new Set(folder.collapsedTaskIds || []);
+      function fHasChildren(idx) {
+        return idx + 1 < folderTasks.length && folderTasks[idx + 1].indent > folderTasks[idx].indent;
+      }
+      function fIsHidden(idx) {
+        let cur = folderTasks[idx].indent;
+        if (cur === 0) return false;
+        for (let k = idx - 1; k >= 0; k--) {
+          if (folderTasks[k].indent < cur) {
+            if (fCollapsedSet.has(folderTasks[k].id)) return true;
+            cur = folderTasks[k].indent;
+            if (cur === 0) break;
+          }
+        }
+        return false;
+      }
       const taskList = document.createElement('div'); taskList.className = 'folder-tasks';
 
-      folderTasks.forEach((ft) => {
-        if (hideCompleted && ft.done) return;
+      for (let ftIdx = 0; ftIdx < folderTasks.length; ftIdx++) {
+        const ft = folderTasks[ftIdx];
+        if (fIsHidden(ftIdx)) continue;
 
         if (ft.isHeader) {
           const row = document.createElement('div');
           row.className = 'ftask-row is-group';
           row.style.paddingLeft = (8 + ft.indent * INDENT_W) + 'px';
+          const hasKids = fHasChildren(ftIdx), isCollapsed = fCollapsedSet.has(ft.id);
+          const chev = document.createElement('span'); chev.className = 'fgroup-chev' + (hasKids ? ' clickable' : '');
+          chev.textContent = isCollapsed ? '▸' : '▾';
+          if (hasKids) {
+            chev.addEventListener('click', () => {
+              if (fCollapsedSet.has(ft.id)) fCollapsedSet.delete(ft.id); else fCollapsedSet.add(ft.id);
+              folder.collapsedTaskIds = [...fCollapsedSet]; saveToStorage(); renderFolders();
+            });
+          }
           const txt = document.createElement('div'); txt.className = 'ftask-group-text';
           txt.contentEditable = 'true'; txt.spellcheck = false; txt.textContent = ft.text;
           txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
           txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); });
-          const del = document.createElement('button'); del.className = 'ptask-del'; del.textContent = '×';
-          del.addEventListener('click', () => { tasks = tasks.filter(t => t.id !== ft.id); saveToStorage(); renderFolders(); });
-          row.append(txt, del);
+          const moreBtn = document.createElement('button'); moreBtn.className = 'h-item-more'; moreBtn.textContent = '⋯';
+          moreBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            openSectionMenu([
+              { label: 'Delete', danger: true, fn: () => { tasks = tasks.filter(t => t.id !== ft.id); saveToStorage(); renderFolders(); } }
+            ], moreBtn);
+          });
+          row.append(chev, txt, moreBtn);
           taskList.appendChild(row);
         } else {
+          if (hideCompleted && ft.done) continue;
           const outer = document.createElement('div'); outer.className = 'ftask-outer';
           outer.style.paddingLeft = (8 + ft.indent * INDENT_W) + 'px';
           const row = document.createElement('div'); row.className = 'ftask-row';
@@ -5396,7 +5464,6 @@ function renderFolders(container) {
           txt.addEventListener('focus', () => { _editingActive = true; });
           txt.addEventListener('blur', () => { ft.text = txt.textContent.trim() || ft.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
 
-          // Schedule badge or button
           if (ft.sched) {
             const label = ft.sched.t ? ft.sched.t : (ft.sched.date || '').slice(5);
             const badge = document.createElement('span'); badge.className = 'ftask-sched-badge';
@@ -5425,7 +5492,7 @@ function renderFolders(container) {
           outer.append(ftHandle, row);
           taskList.appendChild(outer);
         }
-      });
+      }
 
       block.append(taskList);
     }
@@ -5468,6 +5535,12 @@ function makeProjectBlock(proj) {
   moreBtn.addEventListener('click', e => {
     e.stopPropagation();
     openSectionMenu([
+      { label: 'Add header', fn: () => {
+        proj.collapsed = false;
+        proj.tasks.push({ id: ++pUid, text: '', isHeader: true, indent: 0 });
+        saveToStorage(); renderProjects();
+        setTimeout(() => { const all = $$(`.project-block[data-pid="${proj.id}"] .ptask-header-label`); const l=all[all.length-1]; if(l){l.contentEditable='true';l.focus();} }, 30);
+      }},
       { label: proj.inactive ? 'Resume' : 'Pause', fn: () => { proj.inactive = !proj.inactive; saveToStorage(); renderProjects(); } },
       { label: 'Delete', danger: true, fn: () => {
         if (proj.tasks.length === 0 || confirm(`Delete "${proj.name}" and all its tasks?`)) {
@@ -5494,71 +5567,143 @@ function renderProjects() {
     const block = makeProjectBlock(proj);
 
     if (!proj.collapsed) {
+      const collapsedSet = new Set(proj.collapsedTaskIds || []);
+      function pHasChildren(idx) {
+        return idx + 1 < proj.tasks.length && proj.tasks[idx + 1].indent > proj.tasks[idx].indent;
+      }
+      function pIsHidden(idx) {
+        let cur = proj.tasks[idx].indent;
+        if (cur === 0) return false;
+        for (let k = idx - 1; k >= 0; k--) {
+          if (proj.tasks[k].indent < cur) {
+            if (collapsedSet.has(proj.tasks[k].id)) return true;
+            cur = proj.tasks[k].indent;
+            if (cur === 0) break;
+          }
+        }
+        return false;
+      }
       const taskList = document.createElement('div'); taskList.className = 'project-tasks';
       for (let i = 0; i < proj.tasks.length; i++) {
         const pt = proj.tasks[i];
-        if (hideCompleted && pt.done) continue;
-        const outer = document.createElement('div'); outer.className = 'ptask-outer';
-        outer.style.paddingLeft = (12 + pt.indent * INDENT_W) + 'px';
-        const row = document.createElement('div'); row.className = 'ptask-row';
-        const chk = document.createElement('div');
-        chk.className = 'pill-chk' + (pt.done ? ' done' : '');
-        chk.addEventListener('click', () => { pt.done = !pt.done; saveToStorage(); renderProjects(); });
-        const txt = document.createElement('div');
-        txt.className = 'ptask-text' + (pt.done ? ' done' : '');
-        txt.contentEditable = 'false'; txt.spellcheck = false; txt.textContent = pt.text;
-        txt.addEventListener('click', () => { if (txt.contentEditable === 'false') { txt.contentEditable = 'true'; txt.focus(); placeCaretAtEnd(txt); } });
-        txt.addEventListener('keydown', e => {
-          if (e.key === 'Enter') {
-            e.preventDefault(); txt.blur();
-            const next = { id: ++pUid, text: '', done: false, indent: pt.indent, notes: '' };
-            proj.tasks.splice(i + 1, 0, next); saveToStorage(); renderProjects();
-            setTimeout(() => {
-              const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`);
-              if (rows[i + 1]) { rows[i + 1].contentEditable = 'true'; rows[i + 1].focus(); }
-            }, 30);
+        if (pIsHidden(i)) continue;
+
+        if (pt.isHeader) {
+          // ── Header row ──
+          const outer = document.createElement('div'); outer.className = 'ptask-outer is-header';
+          outer.style.paddingLeft = (12 + pt.indent * INDENT_W) + 'px';
+          const row = document.createElement('div'); row.className = 'ptask-row';
+          const hasKids = pHasChildren(i), isCollapsed = collapsedSet.has(pt.id);
+          const chev = document.createElement('span');
+          chev.className = 'ptask-header-chev' + (hasKids ? ' clickable' : '');
+          chev.textContent = isCollapsed ? '▸' : '▾';
+          if (hasKids) {
+            chev.addEventListener('click', () => {
+              if (collapsedSet.has(pt.id)) collapsedSet.delete(pt.id); else collapsedSet.add(pt.id);
+              proj.collapsedTaskIds = [...collapsedSet]; saveToStorage(); renderProjects();
+            });
           }
-          if (e.key === 'Tab') {
-            e.preventDefault();
-            const prevPt = proj.tasks[i - 1];
-            const maxPI = prevPt ? prevPt.indent + 1 : 0;
-            pt.indent = e.shiftKey ? Math.max(0, pt.indent - 1) : Math.min(maxPI, pt.indent + 1);
-            saveToStorage(); renderProjects();
-            setTimeout(() => {
-              const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`);
-              if (rows[i]) { rows[i].contentEditable = 'true'; rows[i].focus(); placeCaretAtEnd(rows[i]); }
-            }, 30);
-          }
-          if (e.key === 'Backspace' && !txt.textContent) {
-            e.preventDefault();
-            if (proj.tasks.length > 1) {
-              proj.tasks.splice(i, 1); saveToStorage(); renderProjects();
+          const txt = document.createElement('div'); txt.className = 'ptask-header-label';
+          txt.contentEditable = 'false'; txt.spellcheck = false; txt.textContent = pt.text;
+          txt.addEventListener('click', () => { if(txt.contentEditable==='false'){txt.contentEditable='true'; txt.focus(); placeCaretAtEnd(txt);} });
+          txt.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              e.preventDefault(); txt.blur();
+              const next = { id: ++pUid, text: '', done: false, indent: Math.min(pt.indent + 1, 4), notes: '' };
+              proj.tasks.splice(i + 1, 0, next); saveToStorage(); renderProjects();
               setTimeout(() => {
-                const rows = $$(`.project-block[data-pid="${proj.id}"] .ptask-text`);
-                const prev = rows[Math.max(0, i - 1)];
-                if (prev) { prev.contentEditable = 'true'; prev.focus(); placeCaretAtEnd(prev); }
+                const el = $(`.project-block[data-pid="${proj.id}"] .ptask-outer[data-ptid="${next.id}"] .ptask-text`);
+                if (el) { el.contentEditable = 'true'; el.focus(); }
               }, 30);
             }
-          }
-          if (e.key === 'Escape') txt.blur();
-        });
-        txt.addEventListener('focus', () => { _editingActive = true; });
-        txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
-        const ptHandle = document.createElement('div');
-        ptHandle.className = 'drag-handle'; ptHandle.innerHTML = '⠿';
-        setupProjectTaskDrag(ptHandle, outer, proj, pt);
-        const menuBtn = document.createElement('button'); menuBtn.className = 'task-menu-btn'; menuBtn.textContent = '⋯';
-        menuBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          openPtaskMenu([
-            { label: pt.notes ? 'Edit notes' : 'Add notes', fn: () => openNotesModal(pt, () => { saveToStorage(); renderProjects(); }) },
-            { label: '→ Schedule', fn: () => moveProjectTaskToSchedule(proj, pt) },
-            { label: 'Delete', fn: () => { proj.tasks.splice(i, 1); saveToStorage(); renderProjects(); }, danger: true }
-          ], menuBtn);
-        });
-        row.append(chk, txt, menuBtn);
-        outer.append(ptHandle, row);
-        taskList.appendChild(outer);
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              const prevPt = proj.tasks[i - 1];
+              const maxPI = prevPt ? prevPt.indent + 1 : 0;
+              pt.indent = e.shiftKey ? Math.max(0, pt.indent - 1) : Math.min(maxPI, pt.indent + 1);
+              saveToStorage(); renderProjects();
+            }
+            if (e.key === 'Escape') txt.blur();
+          });
+          txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); txt.contentEditable = 'false'; });
+          const menuBtn = document.createElement('button'); menuBtn.className = 'task-menu-btn'; menuBtn.textContent = '⋯';
+          menuBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            openPtaskMenu([
+              { label: 'Convert to task', fn: () => { delete pt.isHeader; saveToStorage(); renderProjects(); } },
+              { label: 'Delete', danger: true, fn: () => { proj.tasks.splice(i, 1); saveToStorage(); renderProjects(); } }
+            ], menuBtn);
+          });
+          row.append(chev, txt, menuBtn);
+          outer.append(row);
+          taskList.appendChild(outer);
+        } else {
+          // ── Regular task ──
+          if (hideCompleted && pt.done) continue;
+          const outer = document.createElement('div'); outer.className = 'ptask-outer';
+          outer.style.paddingLeft = (12 + pt.indent * INDENT_W) + 'px';
+          outer.dataset.ptid = pt.id;
+          const row = document.createElement('div'); row.className = 'ptask-row';
+          const chk = document.createElement('div');
+          chk.className = 'pill-chk' + (pt.done ? ' done' : '');
+          chk.addEventListener('click', () => { pt.done = !pt.done; saveToStorage(); renderProjects(); });
+          const txt = document.createElement('div');
+          txt.className = 'ptask-text' + (pt.done ? ' done' : '');
+          txt.contentEditable = 'false'; txt.spellcheck = false; txt.textContent = pt.text;
+          txt.addEventListener('click', () => { if (txt.contentEditable === 'false') { txt.contentEditable = 'true'; txt.focus(); placeCaretAtEnd(txt); } });
+          txt.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              e.preventDefault(); txt.blur();
+              const next = { id: ++pUid, text: '', done: false, indent: pt.indent, notes: '' };
+              proj.tasks.splice(i + 1, 0, next); saveToStorage(); renderProjects();
+              setTimeout(() => {
+                const el = $(`.project-block[data-pid="${proj.id}"] .ptask-outer[data-ptid="${next.id}"] .ptask-text`);
+                if (el) { el.contentEditable = 'true'; el.focus(); }
+              }, 30);
+            }
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              const prevPt = proj.tasks[i - 1];
+              const maxPI = prevPt ? prevPt.indent + 1 : 0;
+              pt.indent = e.shiftKey ? Math.max(0, pt.indent - 1) : Math.min(maxPI, pt.indent + 1);
+              saveToStorage(); renderProjects();
+              setTimeout(() => {
+                const el = $(`.project-block[data-pid="${proj.id}"] .ptask-outer[data-ptid="${pt.id}"] .ptask-text`);
+                if (el) { el.contentEditable = 'true'; el.focus(); placeCaretAtEnd(el); }
+              }, 30);
+            }
+            if (e.key === 'Backspace' && !txt.textContent) {
+              e.preventDefault();
+              if (proj.tasks.length > 1) {
+                const prevTask = i > 0 ? proj.tasks[i - 1] : null;
+                proj.tasks.splice(i, 1); saveToStorage(); renderProjects();
+                if (prevTask) setTimeout(() => {
+                  const el = $(`.project-block[data-pid="${proj.id}"] .ptask-outer[data-ptid="${prevTask.id}"] .ptask-text`);
+                  if (el) { el.contentEditable = 'true'; el.focus(); placeCaretAtEnd(el); }
+                }, 30);
+              }
+            }
+            if (e.key === 'Escape') txt.blur();
+          });
+          txt.addEventListener('focus', () => { _editingActive = true; });
+          txt.addEventListener('blur', () => { pt.text = txt.textContent.trim() || pt.text; saveToStorage(); txt.contentEditable = 'false'; _editingActive = false; if (_pendingRerender) { _pendingRerender = false; rerender(); } });
+          const ptHandle = document.createElement('div');
+          ptHandle.className = 'drag-handle'; ptHandle.innerHTML = '⠿';
+          setupProjectTaskDrag(ptHandle, outer, proj, pt);
+          const menuBtn = document.createElement('button'); menuBtn.className = 'task-menu-btn'; menuBtn.textContent = '⋯';
+          menuBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            openPtaskMenu([
+              { label: pt.notes ? 'Edit notes' : 'Add notes', fn: () => openNotesModal(pt, () => { saveToStorage(); renderProjects(); }) },
+              { label: 'Convert to header', fn: () => { pt.isHeader = true; delete pt.done; saveToStorage(); renderProjects(); } },
+              { label: '→ Schedule', fn: () => moveProjectTaskToSchedule(proj, pt) },
+              { label: 'Delete', fn: () => { proj.tasks.splice(i, 1); saveToStorage(); renderProjects(); }, danger: true }
+            ], menuBtn);
+          });
+          row.append(chk, txt, menuBtn);
+          outer.append(ptHandle, row);
+          taskList.appendChild(outer);
+        }
       }
       block.append(taskList);
     }
