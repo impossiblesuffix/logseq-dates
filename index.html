@@ -1503,6 +1503,23 @@ body.dark .btn-add-hitem { color: #404050; }
 body.dark .notes-fmt-bar { border-bottom-color: #28283a; }
 body.dark .fmt-btn { color: #48485a; }
 body.dark .fmt-btn:hover { background: #26263a; color: var(--accent); }
+.fmt-btn.active { color: var(--accent); background: rgba(var(--accent-rgb),.08); }
+.hn-preview {
+  flex: 1; overflow-y: auto; padding: 14px 18px;
+  font-size: 14px; line-height: 1.7; color: #18181b;
+}
+.hn-preview h1 { font-size: 1.35em; font-weight: 700; margin: .8em 0 .3em; }
+.hn-preview h2 { font-size: 1.15em; font-weight: 700; margin: .7em 0 .25em; }
+.hn-preview h3 { font-size: 1em; font-weight: 700; margin: .6em 0 .2em; }
+.hn-preview p { margin: 0 0 .4em; }
+.hn-preview ul, .hn-preview ol { padding-left: 1.5em; margin: .2em 0 .4em; }
+.hn-preview li { margin: .15em 0; }
+.hn-preview code { font-family: monospace; background: #f0f0f4; padding: 1px 5px; border-radius: 3px; font-size: .88em; }
+.hn-preview strong { font-weight: 700; }
+.hn-preview em { font-style: italic; }
+.hn-preview del { text-decoration: line-through; opacity: .65; }
+body.dark .hn-preview { color: #c0c0d0; }
+body.dark .hn-preview code { background: #2a2a38; }
 .hn-sheet-card.open { transform: translateY(0); }
 .hn-sheet-handle {
   width: 36px; height: 4px; border-radius: 2px;
@@ -2493,12 +2510,16 @@ body.dark .notes-panel textarea { color: #b0b0c0; }
     <div class="notes-fmt-bar">
       <button class="fmt-btn" data-fmt="bold" title="Bold">B</button>
       <button class="fmt-btn" data-fmt="italic" title="Italic">I</button>
-      <button class="fmt-btn" data-fmt="code" title="Code">&lt;/&gt;</button>
-      <button class="fmt-btn" data-fmt="heading" title="Heading">H2</button>
-      <button class="fmt-btn" data-fmt="bullet" title="Bullet">•</button>
+      <button class="fmt-btn" data-fmt="code" title="Inline code">&lt;/&gt;</button>
+      <button class="fmt-btn" data-fmt="heading" title="Heading">H</button>
+      <button class="fmt-btn" data-fmt="bullet" title="Bullet list">•</button>
+      <button class="fmt-btn" data-fmt="numbered" title="Numbered list">1.</button>
       <button class="fmt-btn" data-fmt="strike" title="Strikethrough">S̶</button>
+      <span style="flex:1"></span>
+      <button class="fmt-btn" id="notes-preview-btn" title="Preview">Preview</button>
     </div>
     <textarea class="hn-sheet-ta" id="hn-sheet-ta" placeholder="Write your thoughts…"></textarea>
+    <div class="hn-preview" id="hn-preview" style="display:none"></div>
   </div>
 </div>
 
@@ -4961,12 +4982,61 @@ $('#repeat-cancel').addEventListener('click', closeRepeatModal);
 $('#repeat-modal').addEventListener('mousedown', e => { if (e.target === $('#repeat-modal')) closeRepeatModal(); });
 
 // ── Notes modal ────────────────────────────────────────────────────────────────
+// ── Markdown renderer ─────────────────────────────────────────────────────────
+function _mdInline(t) {
+  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  t = t.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+  t = t.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+  return t;
+}
+function renderMarkdown(text) {
+  if (!text || !text.trim()) return '<p style="color:#aaa;font-style:italic">No notes yet.</p>';
+  const lines = text.split('\n');
+  let html = '', inUl = false, inOl = false;
+  const closeList = () => { if (inUl) { html += '</ul>'; inUl = false; } if (inOl) { html += '</ol>'; inOl = false; } };
+  for (const line of lines) {
+    if (!line.trim()) { closeList(); html += '<p></p>'; continue; }
+    if (/^#{1,3} /.test(line)) {
+      closeList();
+      const lvl = line.match(/^(#+) /)[1].length;
+      html += `<h${lvl}>${_mdInline(line.slice(lvl + 1))}</h${lvl}>`;
+    } else if (/^[-*+] /.test(line)) {
+      if (inOl) { html += '</ol>'; inOl = false; }
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += `<li>${_mdInline(line.slice(2))}</li>`;
+    } else if (/^\d+\. /.test(line)) {
+      if (inUl) { html += '</ul>'; inUl = false; }
+      if (!inOl) { html += '<ol>'; inOl = true; }
+      html += `<li>${_mdInline(line.replace(/^\d+\. /, ''))}</li>`;
+    } else {
+      closeList();
+      html += `<p>${_mdInline(line)}</p>`;
+    }
+  }
+  closeList();
+  return html;
+}
+
 // ── Unified notes sheet (replaces notes-modal + hn-sheet split) ───────────────
-let _notesOnDone = null;
+let _notesOnDone = null, _notesPreview = false;
+function _setNotesMode(preview) {
+  _notesPreview = preview;
+  $('#hn-sheet-ta').style.display = preview ? 'none' : '';
+  const prev = $('#hn-preview');
+  if (preview) { prev.innerHTML = renderMarkdown($('#hn-sheet-ta').value); prev.style.display = ''; }
+  else { prev.style.display = 'none'; }
+  const btn = $('#notes-preview-btn');
+  btn.classList.toggle('active', preview);
+  btn.textContent = preview ? 'Edit' : 'Preview';
+}
 function openNotesModal(task, onDone) {
   _hnHorizon = null; _hnItem = task; _notesOnDone = onDone || null;
   $('#hn-sheet-title').textContent = task.text || 'Task';
   $('#hn-sheet-ta').value = task.notes || '';
+  _setNotesMode(false);
   $('#hn-sheet').style.display = 'flex';
   requestAnimationFrame(() => $('#hn-sheet-card').classList.add('open'));
   setTimeout(() => $('#hn-sheet-ta').focus(), 300);
@@ -4978,22 +5048,25 @@ $('#hn-sheet').addEventListener('click', e => { if (e.target === $('#hn-sheet'))
 $('#hn-sheet-ta').addEventListener('keydown', e => { if (e.key === 'Escape') closeHorizonNote(); });
 
 // Markdown formatting toolbar
-$$('.fmt-btn').forEach(btn => {
-  btn.addEventListener('mousedown', e => { e.preventDefault(); }); // keep textarea focused
+$('#notes-preview-btn').addEventListener('click', () => _setNotesMode(!_notesPreview));
+$$('.fmt-btn[data-fmt]').forEach(btn => {
+  btn.addEventListener('mousedown', e => { e.preventDefault(); });
   btn.addEventListener('click', () => {
+    if (_notesPreview) { _setNotesMode(false); return; }
     const ta = $('#hn-sheet-ta');
     const start = ta.selectionStart, end = ta.selectionEnd, sel = ta.value.slice(start, end);
     const fmt = btn.dataset.fmt;
-    let pre = '', post = '', newSel = sel;
-    if (fmt === 'bold')    { pre = '**'; post = '**'; }
-    else if (fmt === 'italic') { pre = '*'; post = '*'; }
-    else if (fmt === 'code')   { pre = '`'; post = '`'; }
-    else if (fmt === 'strike') { pre = '~~'; post = '~~'; }
-    else if (fmt === 'heading') { pre = '## '; post = ''; }
-    else if (fmt === 'bullet')  { pre = '- '; post = ''; }
-    ta.value = ta.value.slice(0, start) + pre + newSel + post + ta.value.slice(end);
+    let pre = '', post = '';
+    if (fmt === 'bold')     { pre = '**'; post = '**'; }
+    else if (fmt === 'italic')   { pre = '*'; post = '*'; }
+    else if (fmt === 'code')     { pre = '`'; post = '`'; }
+    else if (fmt === 'strike')   { pre = '~~'; post = '~~'; }
+    else if (fmt === 'heading')  { pre = '## '; }
+    else if (fmt === 'bullet')   { pre = '- '; }
+    else if (fmt === 'numbered') { pre = '1. '; }
+    ta.value = ta.value.slice(0, start) + pre + sel + post + ta.value.slice(end);
     ta.selectionStart = start + pre.length;
-    ta.selectionEnd   = end + pre.length + (post ? 0 : 0);
+    ta.selectionEnd   = end + pre.length;
     ta.focus();
   });
 });
@@ -6009,9 +6082,10 @@ function renderRepeaters() {
 let _hnHorizon = null, _hnItem = null;
 
 function openHorizonNote(horizon, item) {
-  _hnHorizon = horizon; _hnItem = item;
+  _hnHorizon = horizon; _hnItem = item; _notesOnDone = null;
   $('#hn-sheet-title').textContent = `${horizon.name} › ${item.text || 'Untitled'}`;
   $('#hn-sheet-ta').value = item.notes || '';
+  _setNotesMode(false);
   $('#hn-sheet').style.display = 'flex';
   requestAnimationFrame(() => $('#hn-sheet-card').classList.add('open'));
   setTimeout(() => $('#hn-sheet-ta').focus(), 300);
@@ -6026,6 +6100,7 @@ function closeHorizonNote(save) {
   setTimeout(() => { $('#hn-sheet').style.display = 'none'; }, 280);
   const wasHorizon = !!_hnHorizon, cb = _notesOnDone;
   _hnHorizon = null; _hnItem = null; _notesOnDone = null;
+  _setNotesMode(false);
   if (cb) cb();
   else if (wasHorizon && currentTab === 'horizons') renderHorizons();
 }
@@ -6459,8 +6534,14 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     if (currentTab === 'schedule') { openAddModal(); return; }
     if (currentTab === 'repeaters') { addNewRepeater(); return; }
-    if (currentTab === 'horizons') { _addHorizonSection(); return; }
-    if (currentTab === 'projects') { projSubTab === 'projects' ? _addProject() : _addFolder(); return; }
+    if (currentTab === 'horizons') {
+      showFabMenu([{ label: 'New horizon', fn: _addHorizonSection }, { label: 'Add item', fn: () => openQuickAddModal('horizons') }]); return;
+    }
+    if (currentTab === 'projects') {
+      if (projSubTab === 'projects') showFabMenu([{ label: 'New project', fn: _addProject }, { label: 'Add task', fn: () => openQuickAddModal('projects') }]);
+      else showFabMenu([{ label: 'New folder', fn: _addFolder }, { label: 'Add task', fn: () => openQuickAddModal('folders') }]);
+      return;
+    }
   }
   if ((e.key === 'd' || e.key === 'D') && !e.metaKey && !e.ctrlKey) {
     e.preventDefault();
