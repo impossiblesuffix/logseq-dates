@@ -1791,10 +1791,13 @@ body.dark .qa-pick-item.selected { background: rgba(var(--accent-rgb),.12); }
 }
 .fab-menu-item + .fab-menu-item { border-top: 1px solid #f0f0f4; }
 .fab-menu-item:active { background: #f4f4f8; }
+.fab-menu-item:focus { background: #f0f0f6; outline: none; }
 body.dark .fab-menu { background: #1e1e28; border-color: #2e2e3c; box-shadow: 0 4px 28px rgba(0,0,0,.4), 0 0 0 1px #2e2e3c; }
 body.dark .fab-menu-item { color: #d0d0d8; }
 body.dark .fab-menu-item + .fab-menu-item { border-color: #28283a; }
 body.dark .fab-menu-item:active { background: #28283c; }
+body.dark .fab-menu-item:focus { background: #28283c; }
+.pill.kbd-focus { box-shadow: 0 0 0 2px var(--accent) !important; }
 
 /* ── Floating add button ─────────────────────────────────────────── */
 #fab-add {
@@ -4410,6 +4413,7 @@ function rerender(fromRealtime = false) {
   updateHeader();
   renderTasks();
   _markNowNextPills();
+  _kbdFocusApply();
   requestAnimationFrame(()=>{
     renderTimeline();
     syncDatePanelHeight();
@@ -4478,10 +4482,31 @@ function openSectionMenu(items, anchorEl) {
 
 /* ── FAB mini-menu ───────────────────────────────────────────── */
 let _fabMenuOpen = false;
+function _fabMenuKeydown(e) {
+  if (!_fabMenuOpen) return;
+  const btns = [...$('#fab-menu').querySelectorAll('.fab-menu-item')];
+  if (!btns.length) return;
+  const idx = btns.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    btns[(idx + 1) % btns.length].focus();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    btns[(idx - 1 + btns.length) % btns.length].focus();
+  } else if (e.key === 'Enter') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    const fn = document.activeElement?._fabFn;
+    closeFabMenu(); if (fn) fn();
+  } else if (e.key === 'Escape') {
+    e.preventDefault(); e.stopImmediatePropagation();
+    closeFabMenu();
+  }
+}
 function closeFabMenu() {
   _fabMenuOpen = false;
   $('#fab-menu').classList.remove('open');
   document.removeEventListener('pointerdown', _fabMenuOutside, true);
+  document.removeEventListener('keydown', _fabMenuKeydown, true);
 }
 function _fabMenuOutside(e) {
   if (!$('#fab-menu').contains(e.target) && e.target !== $('#fab-add')) closeFabMenu();
@@ -4493,12 +4518,15 @@ function showFabMenu(items) {
     const btn = document.createElement('button');
     btn.className = 'fab-menu-item';
     btn.textContent = label;
+    btn._fabFn = fn;
     btn.addEventListener('pointerdown', e => { e.stopPropagation(); closeFabMenu(); fn(); });
     menu.appendChild(btn);
   });
   menu.classList.add('open');
   _fabMenuOpen = true;
+  setTimeout(() => { menu.querySelector('.fab-menu-item')?.focus(); }, 50);
   setTimeout(() => document.addEventListener('pointerdown', _fabMenuOutside, true), 50);
+  document.addEventListener('keydown', _fabMenuKeydown, true);
 }
 
 function _addProject() {
@@ -6531,6 +6559,22 @@ $('#btn-sub-projects').addEventListener('click', () => setProjSubTab('projects')
 $('#btn-sub-folders').addEventListener('click',  () => setProjSubTab('folders'));
 // btn-new-project / btn-new-folder removed — use FAB contextual menu instead
 
+// ── Task list keyboard focus (schedule tab) ────────────────────────────────────
+let _kbdFocusId = null;
+function _kbdFocusClear() {
+  if (_kbdFocusId != null) { $(`.pill[data-id="${_kbdFocusId}"]`)?.classList.remove('kbd-focus'); _kbdFocusId = null; }
+}
+function _kbdFocusSet(id) {
+  _kbdFocusClear(); _kbdFocusId = id;
+  const pill = $(`.pill[data-id="${id}"]`);
+  if (pill) { pill.classList.add('kbd-focus'); pill.scrollIntoView({ block: 'nearest' }); }
+}
+function _kbdFocusApply() {
+  if (_kbdFocusId == null) return;
+  const pill = $(`.pill[data-id="${_kbdFocusId}"]`);
+  if (pill) pill.classList.add('kbd-focus'); else _kbdFocusId = null;
+}
+
 // ── Global keyboard shortcuts ──────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.target.isContentEditable || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -6542,6 +6586,32 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowUp')    { e.preventDefault(); dpMoveFocus(-7);  return; }
     if (e.key === 'ArrowDown')  { e.preventDefault(); dpMoveFocus(7);   return; }
     if (e.key === 'Enter')      { e.preventDefault(); dpSelectFocus();  return; }
+  }
+
+  // Task list arrow-key navigation (schedule tab, day view)
+  if (currentTab === 'schedule' && viewMode !== 'week' && !datePanelIsOpen() && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const pills = [...$$('#tasklist .pill[data-id]')];
+      if (pills.length) {
+        const cur = _kbdFocusId != null ? pills.findIndex(p => +p.dataset.id === _kbdFocusId) : -1;
+        const next = e.key === 'ArrowDown' ? (cur < pills.length - 1 ? cur + 1 : 0) : (cur > 0 ? cur - 1 : pills.length - 1);
+        e.preventDefault(); _kbdFocusSet(+pills[next].dataset.id); return;
+      }
+    }
+    if (_kbdFocusId != null) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const txt = $(`.pill[data-id="${_kbdFocusId}"] .pill-text`);
+        if (txt) { const id = _kbdFocusId; _kbdFocusClear(); txt.contentEditable = 'true'; txt.focus(); placeCaretAtEnd(txt); }
+        return;
+      }
+      if (e.key === ' ') {
+        e.preventDefault();
+        const task = tasks.find(t => t.id === _kbdFocusId);
+        if (task && !task.isHeader) { task.done = !task.done; if (task.done) task.sched = null; rerender(); }
+        return;
+      }
+    }
   }
 
   // Zoom presets — 1 whole day · 2 default · 3 detailed · 4 close-up
@@ -6580,7 +6650,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
     e.preventDefault(); goNextDay();
   }
-  if (e.key === 'Escape') { closeAddModal(); closeNotesModal(false); closeRepeatModal(); closeSchedModal(); closeTaskMenu(); closeDatePanel(); closeSettings(); if (folderDrawerOpen) toggleFolderDrawer(false); }
+  if (e.key === 'Escape') { _kbdFocusClear(); closeAddModal(); closeNotesModal(false); closeRepeatModal(); closeSchedModal(); closeTaskMenu(); closeDatePanel(); closeSettings(); if (folderDrawerOpen) toggleFolderDrawer(false); }
   if ((e.metaKey || e.ctrlKey) && e.key === '1') { e.preventDefault(); switchTab('schedule'); }
   if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('projects'); }
   if ((e.metaKey || e.ctrlKey) && e.key === '3') { e.preventDefault(); switchTab('horizons'); }
