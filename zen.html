@@ -54,14 +54,10 @@
       z-index: 2;
       display: flex;
       justify-content: center;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 6%, black 38%, black 100%);
-      mask-image: linear-gradient(to bottom, transparent 0%, transparent 6%, black 38%, black 100%);
-      -webkit-mask-size: 100% 100vh;
-      mask-size: 100% 100vh;
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
-      -webkit-mask-position: 0 0;
-      mask-position: 0 0;
     }
 
     #editor {
@@ -281,18 +277,19 @@ function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
 
 window.addEventListener('resize', () => { resizeNoise(); restartNoiseTimer(); });
 
-// ── Fade mask — keeps the top-fade fixed to viewport as page scrolls ─────
+// ── Recency fade — older text fades toward the top; current line is fully bright
 const wrap = document.getElementById('wrap');
-function syncFadeMask() {
-  const pos = `0 ${window.scrollY}px`;
-  wrap.style.webkitMaskPosition = pos;
-  wrap.style.maskPosition = pos;
+function updateFadeMask(cursorDocY) {
+  const wrapH = wrap.scrollHeight;
+  if (!wrapH) return;
+  const pct = Math.min(98, Math.max(2, (cursorDocY / wrapH) * 100));
+  const g = `linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, black ${pct}%)`;
+  wrap.style.webkitMaskImage = g;
+  wrap.style.maskImage = g;
 }
-window.addEventListener('scroll', syncFadeMask, { passive: true });
 // Disable user-initiated scroll (wheel/touch); programmatic scrollToY still works
 window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
 window.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-syncFadeMask();
 
 // ── Scroll spring — runs every frame, gently pulls scroll toward target ───
 // 8 % of remaining distance per frame ≈ 500 ms to settle (matches char fade)
@@ -341,7 +338,11 @@ if (stored) {
     const s = window.getSelection();
     if (!s || !s.rangeCount) return;
     const rects = s.getRangeAt(0).getClientRects();
-    if (rects.length) scrollToY(rects[0].top + rects[0].height / 2);
+    if (rects.length) {
+      const mid = rects[0].top + rects[0].height / 2;
+      scrollToY(mid);
+      updateFadeMask(mid + window.scrollY);
+    }
   });
 }
 
@@ -381,8 +382,10 @@ function insertChar(ch) {
   sel.addRange(nr);
 
   requestAnimationFrame(() => {
-    const r = span.getBoundingClientRect();
-    scrollToY(r.top + r.height / 2);
+    const r   = span.getBoundingClientRect();
+    const mid = r.top + r.height / 2;
+    scrollToY(mid);
+    updateFadeMask(mid + window.scrollY);
   });
 
   saveContent(); updateWC(); updateTitle();
@@ -426,7 +429,9 @@ function insertNewline() {
     sel.removeAllRanges();
     sel.addRange(rr);
 
-    scrollToY(rect.top + rect.height / 2);
+    const mid = rect.top + rect.height / 2;
+    scrollToY(mid);
+    updateFadeMask(mid + window.scrollY);
   });
 
   saveContent(); updateWC();
