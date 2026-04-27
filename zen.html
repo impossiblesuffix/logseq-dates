@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #cac7c0;
+      --text: #14120d;
+      --muted: #888580;
+      --btn-bg: rgba(0,0,0,0.07);
+      --btn-hover: rgba(0,0,0,0.14);
+      --code-bg: rgba(0,0,0,0.07);
+    }
+    body.dark {
+      --bg: #0c0b11;
+      --text: #dedad2;
+      --muted: #3a3c48;
+      --btn-bg: rgba(255,255,255,0.07);
+      --btn-hover: rgba(255,255,255,0.14);
+      --code-bg: rgba(255,255,255,0.08);
+    }
+
+    html { min-height: 100%; }
+    body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.6s, color 0.5s;
+      font-family: 'Quicksand', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { display: none; }
+    html { scrollbar-width: none; }
+
+    #noise-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      display: block;
+      z-index: 0;
+    }
+
+    #wrap {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 6%, black 38%, black 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, transparent 6%, black 38%, black 100%);
+      -webkit-mask-size: 100% 100vh;
+      mask-size: 100% 100vh;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: 0 0;
+      mask-position: 0 0;
+    }
+
+    #editor {
+      width: 100%;
+      max-width: 660px;
+      min-height: 100vh;
+      padding: 50vh 32px;
+      font-family: 'Quicksand', sans-serif;
+      font-weight: 500;
+      font-size: 18px;
+      line-height: 1.9;
+      letter-spacing: 0.015em;
+      color: var(--text);
+      caret-color: var(--text);
+      outline: none;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      text-shadow: 0 0 24px var(--bg), 0 0 10px var(--bg), 0 0 4px var(--bg);
+      transition: color 0.5s, text-shadow 0.6s;
+    }
+
+    #editor:empty::before {
+      content: attr(data-ph);
+      color: var(--muted);
+      font-weight: 300;
+      pointer-events: none;
+    }
+
+    @keyframes char-in {
+      0%   { opacity: 0; filter: blur(5px); }
+      40%  { opacity: 0.75; }
+      100% { opacity: 1;  filter: blur(0px); }
+    }
+    .c { animation: char-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    #preview {
+      display: none;
+      width: 100%;
+      max-width: 660px;
+      min-height: 100vh;
+      padding: 50vh 32px;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1.9;
+      letter-spacing: 0.015em;
+      text-shadow: 0 0 24px var(--bg), 0 0 10px var(--bg), 0 0 4px var(--bg);
+    }
+    #preview h1 { font-size: 1.85em; font-weight: 600; margin: 1.3em 0 0.4em; line-height: 1.2; }
+    #preview h2 { font-size: 1.45em; font-weight: 600; margin: 1.1em 0 0.38em; }
+    #preview h3 { font-size: 1.2em;  font-weight: 500; margin: 0.9em 0 0.3em; }
+    #preview h4, #preview h5, #preview h6 { font-size: 1.05em; font-weight: 500; margin: 0.7em 0 0.25em; }
+    #preview p  { margin: 0 0 0.85em; }
+    #preview strong { font-weight: 600; }
+    #preview em { font-style: italic; }
+    #preview code { font-family: ui-monospace,'SF Mono',monospace; font-size:.85em; background:var(--code-bg); padding:.15em .4em; border-radius:4px; letter-spacing:0; }
+    #preview pre { background:var(--code-bg); padding:1.1em 1.3em; border-radius:10px; overflow-x:auto; margin:1.1em 0; }
+    #preview pre code { background:none; padding:0; }
+    #preview blockquote { border-left:2px solid var(--muted); padding-left:1.2em; margin:1em 0; color:var(--muted); font-weight:300; }
+    #preview ul { list-style:disc;    padding-left:1.7em; margin:.5em 0 .85em; }
+    #preview ol { list-style:decimal; padding-left:1.7em; margin:.5em 0 .85em; }
+    #preview li { margin:.3em 0; }
+    #preview hr { border:none; border-top:1px solid rgba(128,128,128,.18); margin:2.2em 0; }
+    #preview a  { color:inherit; opacity:.65; text-decoration-thickness:1px; }
+
+    #ctrl {
+      position: fixed; top: 22px; right: 22px;
+      display: flex; gap: 7px; z-index: 10;
+      opacity: 0.22; transition: opacity 0.5s;
+    }
+    #ctrl:hover, #ctrl:focus-within { opacity: 1; }
+
+    .btn {
+      width: 34px; height: 34px;
+      border: none; border-radius: 10px;
+      background: var(--btn-bg); color: var(--text);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.12s, color 0.5s;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .btn:hover  { background: var(--btn-hover); }
+    .btn:active { transform: scale(0.91); }
+
+    #wc {
+      position: fixed; bottom: 28px; right: 22px;
+      font-family: 'Quicksand',sans-serif; font-size: 11px;
+      font-weight: 500; letter-spacing: .07em; text-transform: uppercase;
+      color: var(--muted); z-index: 10;
+      opacity: 0; transition: opacity 0.5s, color 0.5s; pointer-events: none;
+    }
+    #wc.on { opacity: 1; }
+
+    #toast {
+      position: fixed; top: 24px; left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: var(--text); color: var(--bg);
+      padding: 6px 18px; border-radius: 999px;
+      font-family: 'Quicksand',sans-serif; font-size: 12px;
+      font-weight: 500; letter-spacing: .04em;
+      opacity: 0; transition: opacity .25s, transform .25s, background .5s, color .5s;
+      pointer-events: none; z-index: 100;
+    }
+    #toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <canvas id="noise-canvas"></canvas>
+
+  <div id="wrap">
+    <div id="editor" contenteditable="true" data-ph="Begin writing…" spellcheck="true"></div>
+    <div id="preview"></div>
+  </div>
+
+  <div id="ctrl">
+    <button class="btn" id="btheme" aria-label="Toggle theme"></button>
+    <button class="btn" id="bprev"  aria-label="Preview"></button>
+    <button class="btn" id="bsave"  aria-label="Save"></button>
+  </div>
+  <div id="wc"></div>
+  <div id="toast">Saved</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  NOISE PARAMETERS  —  edit these to taste, then reload
+// ═══════════════════════════════════════════════════════════════════════════
+const NOISE = {
+  dark: {
+    grain:    1,     // pixel block size in CSS px  (1 = crisp 1:1,  4 = coarse chunks)
+    density:  0.30,  // fraction of pixels that get noise  (0 = blank,  1 = solid fill)
+    alpha:    65,   // opacity of each noise pixel  (0–255)
+    lo:       18,    // darkest possible pixel brightness  (0–255)
+    hi:       80,   // brightest possible pixel brightness  (0–255)
+    rSpread:  30,    // red channel ± variance around the grey base
+    gSpread:  22,    // green channel ± variance
+    bSpread:  60,    // blue channel ± variance  (higher = more cyan/TV tint)
+    speed:    130,   // ms between redraws  (higher = slower shimmer,  0 = frozen still)
+  },
+  light: {
+    grain:    2,
+    density:  0.22,
+    alpha:    100,
+    lo:       95,
+    hi:       225,
+    rSpread:  30,
+    gSpread:  22,
+    bSpread:  60,
+    speed:    130,
+  },
+};
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Icons ─────────────────────────────────────────────────────────────────
+const ICO = {
+  sun:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="2.5"/><line x1="7.5" y1="1" x2="7.5" y2="2.6"/><line x1="7.5" y1="12.4" x2="7.5" y2="14"/><line x1="1" y1="7.5" x2="2.6" y2="7.5"/><line x1="12.4" y1="7.5" x2="14" y2="7.5"/><line x1="3.2" y1="3.2" x2="4.2" y2="4.2"/><line x1="10.8" y1="10.8" x2="11.8" y2="11.8"/><line x1="11.8" y1="3.2" x2="10.8" y2="4.2"/><line x1="3.2" y1="11.8" x2="4.2" y2="10.8"/></svg>`,
+  moon: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 9.4A5.5 5.5 0 0 1 6.1 2.7 5.5 5.5 0 1 0 12.8 9.4z"/></svg>`,
+  eye:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7.5S3.5 2 7.5 2s6.5 5.5 6.5 5.5-2.5 5.5-6.5 5.5S1 7.5 1 7.5z"/><circle cx="7.5" cy="7.5" r="2"/></svg>`,
+  pen:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5l3 3-8 8H2.5v-3z"/></svg>`,
+  save: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7.5" y1="2" x2="7.5" y2="10.5"/><polyline points="4.2,7.2 7.5,10.5 10.8,7.2"/><line x1="1.5" y1="13.5" x2="13.5" y2="13.5"/></svg>`,
+};
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+const body   = document.body;
+const btheme = document.getElementById('btheme');
+let dark = localStorage.getItem('zen-dark') === '1';
+
+function applyTheme() {
+  body.classList.toggle('dark', dark);
+  btheme.innerHTML = dark ? ICO.sun : ICO.moon;
+  resizeNoise(); // repaint with the correct palette
+  restartNoiseTimer();
+}
+
+btheme.addEventListener('click', () => {
+  dark = !dark;
+  localStorage.setItem('zen-dark', dark ? '1' : '0');
+  applyTheme();
+});
+
+// ── Noise canvas ──────────────────────────────────────────────────────────
+const noiseCanvas = document.getElementById('noise-canvas');
+const nCtx        = noiseCanvas.getContext('2d');
+let nW, nH, noiseTimer;
+
+function resizeNoise() {
+  const cfg = dark ? NOISE.dark : NOISE.light;
+  nW = noiseCanvas.width  = Math.ceil(window.innerWidth  / cfg.grain);
+  nH = noiseCanvas.height = Math.ceil(window.innerHeight / cfg.grain);
+  noiseCanvas.style.width  = window.innerWidth  + 'px';
+  noiseCanvas.style.height = window.innerHeight + 'px';
+  drawNoise();
+}
+
+function drawNoise() {
+  const cfg = dark ? NOISE.dark : NOISE.light;
+  const img = nCtx.createImageData(nW, nH);
+  const px  = img.data;
+  const range = cfg.hi - cfg.lo;
+
+  for (let i = 0; i < px.length; i += 4) {
+    if (Math.random() > cfg.density) continue;   // leave transparent
+    const base = cfg.lo + Math.random() * range;
+    px[i]     = clamp(base + (Math.random() - 0.5) * cfg.rSpread * 2);
+    px[i + 1] = clamp(base + (Math.random() - 0.5) * cfg.gSpread * 2);
+    px[i + 2] = clamp(base + (Math.random() - 0.5) * cfg.bSpread * 2);
+    px[i + 3] = cfg.alpha;
+  }
+  nCtx.putImageData(img, 0, 0);
+}
+
+function restartNoiseTimer() {
+  clearInterval(noiseTimer);
+  const cfg = dark ? NOISE.dark : NOISE.light;
+  if (cfg.speed > 0) noiseTimer = setInterval(drawNoise, cfg.speed);
+}
+
+function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
+
+window.addEventListener('resize', () => { resizeNoise(); restartNoiseTimer(); });
+
+// ── Fade mask — keeps the top-fade fixed to viewport as page scrolls ─────
+const wrap = document.getElementById('wrap');
+function syncFadeMask() {
+  const pos = `0 ${window.scrollY}px`;
+  wrap.style.webkitMaskPosition = pos;
+  wrap.style.maskPosition = pos;
+}
+window.addEventListener('scroll', syncFadeMask, { passive: true });
+// Disable user-initiated scroll (wheel/touch); programmatic scrollToY still works
+window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+window.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+syncFadeMask();
+
+// ── Scroll spring — runs every frame, gently pulls scroll toward target ───
+// 8 % of remaining distance per frame ≈ 500 ms to settle (matches char fade)
+let scrollTarget = null;
+
+(function scrollLoop() {
+  if (scrollTarget !== null) {
+    const dist = scrollTarget - window.scrollY;
+    if (Math.abs(dist) < 0.8) {
+      window.scrollTo(0, scrollTarget);
+      scrollTarget = null;
+    } else {
+      window.scrollTo(0, window.scrollY + dist * 0.08);
+    }
+  }
+  requestAnimationFrame(scrollLoop);
+})();
+
+function scrollToY(viewportY) {
+  const diff = viewportY - window.innerHeight * 0.46;
+  if (Math.abs(diff) < 3) return;
+  scrollTarget = window.scrollY + diff;
+}
+
+// ── Editor ────────────────────────────────────────────────────────────────
+const editor  = document.getElementById('editor');
+const preview = document.getElementById('preview');
+const bprev   = document.getElementById('bprev');
+const bsave   = document.getElementById('bsave');
+const wcEl    = document.getElementById('wc');
+const toast   = document.getElementById('toast');
+
+bprev.innerHTML = ICO.eye;
+bsave.innerHTML = ICO.save;
+
+const stored = localStorage.getItem('zen-content');
+if (stored) {
+  editor.textContent = stored.endsWith('\n') ? stored : stored + '\n';
+  const sel = window.getSelection();
+  const r   = document.createRange();
+  r.selectNodeContents(editor);
+  r.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(r);
+  requestAnimationFrame(() => {
+    const s = window.getSelection();
+    if (!s || !s.rangeCount) return;
+    const rects = s.getRangeAt(0).getClientRects();
+    if (rects.length) scrollToY(rects[0].top + rects[0].height / 2);
+  });
+}
+
+function getContent() { return editor.textContent.replace(/\n+$/, ''); }
+function saveContent() { localStorage.setItem('zen-content', getContent()); }
+function updateTitle() {
+  const first = getContent().split('\n')[0].replace(/^#+\s*/, '').trim();
+  document.title = first || 'Zen';
+}
+
+let wcTimer;
+function updateWC() {
+  const t = getContent().trim();
+  const w = t ? t.split(/\s+/).length : 0;
+  wcEl.textContent = w === 1 ? '1 word' : `${w.toLocaleString()} words`;
+  wcEl.classList.add('on');
+  clearTimeout(wcTimer);
+  wcTimer = setTimeout(() => wcEl.classList.remove('on'), 2400);
+}
+
+// ── Character insertion ───────────────────────────────────────────────────
+function insertChar(ch) {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+
+  const span = document.createElement('span');
+  span.className   = 'c';
+  span.textContent = ch;
+  range.insertNode(span);
+
+  const nr = document.createRange();
+  nr.setStartAfter(span);
+  nr.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(nr);
+
+  requestAnimationFrame(() => {
+    const r = span.getBoundingClientRect();
+    scrollToY(r.top + r.height / 2);
+  });
+
+  saveContent(); updateWC(); updateTitle();
+}
+
+function insertNewline() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+
+  const nl = document.createTextNode('\n');
+  range.insertNode(nl);
+
+  // Invisible probe on the new line gives us its Y position
+  const probe = document.createElement('span');
+  probe.style.cssText = 'opacity:0;font-size:inherit;line-height:inherit;';
+  probe.textContent   = '​';
+  const pr = document.createRange();
+  pr.setStartAfter(nl);
+  pr.collapse(true);
+  pr.insertNode(probe);
+
+  if (!probe.nextSibling) editor.appendChild(document.createTextNode('\n'));
+
+  const nr = document.createRange();
+  nr.setStartAfter(probe);
+  nr.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(nr);
+
+  requestAnimationFrame(() => {
+    const rect      = probe.getBoundingClientRect();
+    const afterProbe = probe.nextSibling;
+    probe.parentNode.removeChild(probe);
+
+    const rr = document.createRange();
+    if (afterProbe) { rr.setStartBefore(afterProbe); }
+    else            { rr.setStartAfter(nl); }
+    rr.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(rr);
+
+    scrollToY(rect.top + rect.height / 2);
+  });
+
+  saveContent(); updateWC();
+}
+
+editor.addEventListener('beforeinput', e => {
+  if (e.inputType === 'insertText') {
+    e.preventDefault();
+    if (e.data) insertChar(e.data);
+  } else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+    e.preventDefault();
+    insertNewline();
+  }
+});
+
+editor.addEventListener('input', () => { saveContent(); updateWC(); updateTitle(); });
+
+// ── Markdown preview ──────────────────────────────────────────────────────
+let isPrev = false;
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function inl(s) {
+  return esc(s)
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/__(.+?)__/g,'<strong>$1</strong>')
+    .replace(/_([^_\n]+?)_/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function renderMd(text) {
+  const lines = text.split('\n');
+  let out='',inCode=false,codeBuf='',inList=null,listBuf='';
+  const flush=()=>{ if(inList){out+=`<${inList}>${listBuf}</${inList}>`;inList=null;listBuf='';} };
+  for(const line of lines){
+    if(line.startsWith('```')){
+      if(inCode){out+=`<pre><code>${esc(codeBuf.replace(/\n$/,''))}</code></pre>`;inCode=false;codeBuf='';}
+      else{flush();inCode=true;} continue;
+    }
+    if(inCode){codeBuf+=line+'\n';continue;}
+    const hm=line.match(/^(#{1,6})\s+(.+)/);
+    if(hm){flush();out+=`<h${hm[1].length}>${inl(hm[2])}</h${hm[1].length}>`;continue;}
+    if(/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())){flush();out+='<hr>';continue;}
+    if(line.startsWith('> ')){flush();out+=`<blockquote>${inl(line.slice(2))}</blockquote>`;continue;}
+    const ul=line.match(/^[ \t]*[*\-+]\s+(.+)/);
+    if(ul){if(inList!=='ul'){flush();inList='ul';}listBuf+=`<li>${inl(ul[1])}</li>`;continue;}
+    const ol=line.match(/^[ \t]*\d+\.\s+(.+)/);
+    if(ol){if(inList!=='ol'){flush();inList='ol';}listBuf+=`<li>${inl(ol[1])}</li>`;continue;}
+    if(!line.trim()){flush();out+='<br>';continue;}
+    flush();out+=`<p>${inl(line)}</p>`;
+  }
+  flush();
+  if(inCode)out+=`<pre><code>${esc(codeBuf)}</code></pre>`;
+  return out;
+}
+function togglePreview() {
+  isPrev = !isPrev;
+  if (isPrev) {
+    preview.innerHTML = renderMd(getContent());
+    editor.style.display='none'; preview.style.display='block';
+    bprev.innerHTML=ICO.pen; bprev.title='Edit (⌘P)';
+  } else {
+    editor.style.display=''; preview.style.display='none';
+    bprev.innerHTML=ICO.eye; bprev.title='Preview (⌘P)';
+    editor.focus();
+  }
+}
+bprev.addEventListener('click', togglePreview);
+
+// ── Save ──────────────────────────────────────────────────────────────────
+function save() {
+  const blob=new Blob([getContent()],{type:'text/markdown;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=Object.assign(document.createElement('a'),{href:url,download:`note-${new Date().toISOString().slice(0,10)}.md`});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('Saved');
+}
+function showToast(msg){toast.textContent=msg;toast.classList.add('on');setTimeout(()=>toast.classList.remove('on'),1600);}
+bsave.addEventListener('click', save);
+document.addEventListener('keydown', e => {
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key==='s'){e.preventDefault();save();}
+  if (mod && e.key==='p'){e.preventDefault();togglePreview();}
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+applyTheme();   // draws noise + sets interval
+editor.focus();
+</script>
+</body>
+</html>
