@@ -502,7 +502,7 @@ let cursorDocY = null;
 function updateFadeMask() {
   if (cursorDocY === null) return;
   const vy  = Math.max(1, cursorDocY - window.scrollY);
-  const g   = `linear-gradient(to bottom, transparent 0px, black ${Math.round(vy)}px)`;
+  const g   = `linear-gradient(to bottom, rgba(0,0,0,0.06) 0px, black ${Math.round(vy)}px)`;
   const pos = `0 ${window.scrollY}px`;
   wrap.style.webkitMaskImage = g;
   wrap.style.maskImage = g;
@@ -525,8 +525,8 @@ let breatheT0    = null;
     } else {
       window.scrollTo(0, window.scrollY + dist * 0.08);
     }
-    updateFadeMask();
   }
+  updateFadeMask();
   if (S.breathe) {
     const now = performance.now();
     if (!breatheT0) breatheT0 = now;
