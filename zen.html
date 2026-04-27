@@ -11,14 +11,6 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #cac7c0;
-      --text: #14120d;
-      --muted: #888580;
-      --btn-bg: rgba(0,0,0,0.07);
-      --btn-hover: rgba(0,0,0,0.14);
-      --code-bg: rgba(0,0,0,0.07);
-    }
-    body.dark {
       --bg: #0c0b11;
       --text: #dedad2;
       --muted: #3a3c48;
@@ -27,7 +19,9 @@
       --code-bg: rgba(255,255,255,0.08);
     }
 
-    html { min-height: 100%; }
+    html { min-height: 100%; scrollbar-width: none; }
+    ::-webkit-scrollbar { display: none; }
+
     body {
       min-height: 100%;
       background: var(--bg);
@@ -38,53 +32,38 @@
       overflow-x: hidden;
     }
 
-    ::-webkit-scrollbar { display: none; }
-    html { scrollbar-width: none; }
-
     #noise-canvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      display: block;
-      z-index: 0;
+      position: fixed; inset: 0;
+      pointer-events: none; display: block; z-index: 0;
+    }
+
+    #vignette {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 1;
+      background: radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.92) 100%);
+      opacity: 0; transition: opacity 0.6s;
     }
 
     #wrap {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      justify-content: center;
-      -webkit-mask-size: 100% 100vh;
-      mask-size: 100% 100vh;
-      -webkit-mask-repeat: no-repeat;
-      mask-repeat: no-repeat;
+      position: relative; z-index: 2;
+      display: flex; justify-content: center;
+      -webkit-mask-size: 100% 100vh; mask-size: 100% 100vh;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
     }
 
     #editor {
-      width: 100%;
-      max-width: 660px;
-      min-height: 100vh;
-      padding: 48px 32px 50vh;
-      font-family: 'Quicksand', sans-serif;
-      font-weight: 500;
-      font-size: 18px;
-      line-height: 1.9;
-      letter-spacing: 0.015em;
-      color: var(--text);
-      caret-color: var(--text);
-      outline: none;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: break-word;
+      width: 100%; max-width: 660px;
+      min-height: 100vh; padding: 48px 32px 50vh;
+      font-family: 'Quicksand', sans-serif; font-weight: 500;
+      font-size: 18px; line-height: 1.9; letter-spacing: 0.015em;
+      color: var(--text); caret-color: var(--text); outline: none;
+      white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;
       text-shadow: 0 0 24px var(--bg), 0 0 10px var(--bg), 0 0 4px var(--bg);
       transition: color 0.5s, text-shadow 0.6s;
     }
-
     #editor:empty::before {
-      content: attr(data-ph);
-      color: var(--muted);
-      font-weight: 300;
-      pointer-events: none;
+      content: attr(data-ph); color: var(--muted);
+      font-weight: 300; pointer-events: none;
     }
 
     @keyframes char-in {
@@ -95,25 +74,19 @@
     .c { animation: char-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
     #preview {
-      display: none;
-      width: 100%;
-      max-width: 660px;
-      min-height: 100vh;
-      padding: 48px 32px 50vh;
-      font-size: 18px;
-      font-weight: 500;
-      line-height: 1.9;
-      letter-spacing: 0.015em;
+      display: none; width: 100%; max-width: 660px;
+      min-height: 100vh; padding: 48px 32px 50vh;
+      font-size: 18px; font-weight: 500; line-height: 1.9; letter-spacing: 0.015em;
       text-shadow: 0 0 24px var(--bg), 0 0 10px var(--bg), 0 0 4px var(--bg);
     }
-    #preview h1 { font-size: 1.85em; font-weight: 600; margin: 1.3em 0 0.4em; line-height: 1.2; }
-    #preview h2 { font-size: 1.45em; font-weight: 600; margin: 1.1em 0 0.38em; }
-    #preview h3 { font-size: 1.2em;  font-weight: 500; margin: 0.9em 0 0.3em; }
-    #preview h4, #preview h5, #preview h6 { font-size: 1.05em; font-weight: 500; margin: 0.7em 0 0.25em; }
-    #preview p  { margin: 0 0 0.85em; }
-    #preview strong { font-weight: 600; }
-    #preview em { font-style: italic; }
-    #preview code { font-family: ui-monospace,'SF Mono',monospace; font-size:.85em; background:var(--code-bg); padding:.15em .4em; border-radius:4px; letter-spacing:0; }
+    #preview h1 { font-size:1.85em; font-weight:600; margin:1.3em 0 .4em; line-height:1.2; }
+    #preview h2 { font-size:1.45em; font-weight:600; margin:1.1em 0 .38em; }
+    #preview h3 { font-size:1.2em;  font-weight:500; margin:.9em 0 .3em; }
+    #preview h4,#preview h5,#preview h6 { font-size:1.05em; font-weight:500; margin:.7em 0 .25em; }
+    #preview p  { margin:0 0 .85em; }
+    #preview strong { font-weight:600; }
+    #preview em { font-style:italic; }
+    #preview code { font-family:ui-monospace,'SF Mono',monospace; font-size:.85em; background:var(--code-bg); padding:.15em .4em; border-radius:4px; letter-spacing:0; }
     #preview pre { background:var(--code-bg); padding:1.1em 1.3em; border-radius:10px; overflow-x:auto; margin:1.1em 0; }
     #preview pre code { background:none; padding:0; }
     #preview blockquote { border-left:2px solid var(--muted); padding-left:1.2em; margin:1em 0; color:var(--muted); font-weight:300; }
@@ -125,16 +98,15 @@
 
     #ctrl {
       position: fixed; top: 22px; right: 22px;
-      display: flex; gap: 7px; z-index: 10;
+      display: flex; gap: 7px; z-index: 40;
       opacity: 0.22; transition: opacity 0.5s;
     }
     #ctrl:hover, #ctrl:focus-within { opacity: 1; }
 
     .btn {
-      width: 34px; height: 34px;
-      border: none; border-radius: 10px;
-      background: var(--btn-bg); color: var(--text);
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border: none; border-radius: 10px;
+      background: var(--btn-bg); color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
       transition: background 0.2s, transform 0.12s, color 0.5s;
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
@@ -161,10 +133,137 @@
       pointer-events: none; z-index: 100;
     }
     #toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Settings panel ────────────────────────────────────────────────────── */
+    #settings-panel {
+      position: fixed; top: 0; right: 0;
+      width: 252px; height: 100vh;
+      background: rgba(8,7,14,0.96);
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      border-left: 1px solid rgba(255,255,255,0.055);
+      z-index: 30; overflow-y: auto; overflow-x: hidden;
+      padding: 18px 17px 56px;
+      font-family: 'Quicksand', sans-serif;
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      scrollbar-width: none;
+    }
+    #settings-panel::-webkit-scrollbar { display: none; }
+    #settings-panel.open { transform: translateX(0); }
+
+    .sp-hdr {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding-bottom: 13px; margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.065);
+    }
+    .sp-title {
+      font-size: 9.5px; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(255,255,255,0.32);
+    }
+    .sp-x {
+      background: none; border: none;
+      color: rgba(255,255,255,0.28); font-size: 13px;
+      cursor: pointer; padding: 2px 4px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .sp-x:hover { color: rgba(255,255,255,0.7); }
+
+    .sp-sec {
+      margin-bottom: 18px; padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.045);
+    }
+    .sp-sec:last-child { border-bottom: none; margin-bottom: 0; }
+    .sp-stitle {
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 0.24em; text-transform: uppercase;
+      color: rgba(255,255,255,0.25); margin-bottom: 9px;
+    }
+
+    .sp-row {
+      display: flex; align-items: center;
+      gap: 8px; margin-bottom: 8px;
+    }
+    .sp-lbl {
+      flex: 0 0 76px; font-size: 10.5px; font-weight: 400;
+      color: rgba(255,255,255,0.48); letter-spacing: 0.01em;
+    }
+    .sp-val {
+      flex: 0 0 30px; text-align: right;
+      font-size: 9.5px; color: rgba(255,255,255,0.3);
+      font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+    }
+
+    .sp-slider {
+      -webkit-appearance: none; appearance: none;
+      flex: 1; height: 2px; border-radius: 1px; outline: none; cursor: pointer;
+      background: linear-gradient(to right,
+        rgba(255,255,255,0.72) var(--p,0%),
+        rgba(255,255,255,0.1)  var(--p,0%));
+    }
+    .sp-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,0.88);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.1);
+      cursor: pointer;
+    }
+    .sp-slider::-moz-range-thumb {
+      width: 10px; height: 10px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.88); cursor: pointer;
+    }
+
+    .sp-color {
+      -webkit-appearance: none; appearance: none;
+      width: 28px; height: 19px; padding: 0; border: none;
+      border-radius: 5px; cursor: pointer; overflow: hidden; background: none;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.14);
+    }
+    .sp-color::-webkit-color-swatch-wrapper { padding: 0; }
+    .sp-color::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+    .sp-toggle {
+      position: relative; display: inline-block;
+      width: 34px; height: 18px; flex-shrink: 0;
+    }
+    .sp-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .sp-tk {
+      position: absolute; inset: 0; border-radius: 9px;
+      background: rgba(255,255,255,0.1); cursor: pointer;
+      transition: background 0.2s;
+    }
+    .sp-tk::before {
+      content: ''; position: absolute;
+      width: 12px; height: 12px; left: 3px; top: 3px;
+      border-radius: 50%; background: rgba(255,255,255,0.45);
+      transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), background 0.2s;
+    }
+    .sp-toggle input:checked + .sp-tk { background: rgba(255,255,255,0.22); }
+    .sp-toggle input:checked + .sp-tk::before {
+      transform: translateX(16px); background: rgba(255,255,255,0.9);
+    }
+
+    .sp-presets { display: flex; flex-wrap: wrap; gap: 5px; }
+    .sp-preset {
+      padding: 4px 9px; border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 6px; background: transparent;
+      color: rgba(255,255,255,0.55);
+      font-family: 'Quicksand', sans-serif; font-size: 10.5px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.03em;
+      transition: background 0.15s, border-color 0.2s, color 0.15s;
+    }
+    .sp-preset:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); }
+    .sp-preset.active {
+      border-color: rgba(255,255,255,0.48);
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.9);
+    }
   </style>
 </head>
 <body>
   <canvas id="noise-canvas"></canvas>
+  <div id="vignette"></div>
 
   <div id="wrap">
     <div id="editor" contenteditable="true" data-ph="Begin writing…" spellcheck="true"></div>
@@ -172,116 +271,232 @@
   </div>
 
   <div id="ctrl">
-    <button class="btn" id="btheme" aria-label="Toggle theme"></button>
-    <button class="btn" id="bprev"  aria-label="Preview"></button>
-    <button class="btn" id="bsave"  aria-label="Save"></button>
+    <button class="btn" id="btheme"    aria-label="Toggle theme"></button>
+    <button class="btn" id="bprev"     aria-label="Preview"></button>
+    <button class="btn" id="bsave"     aria-label="Save"></button>
+    <button class="btn" id="bsettings" aria-label="Settings"></button>
   </div>
   <div id="wc"></div>
   <div id="toast">Saved</div>
 
-<script>
-// ═══════════════════════════════════════════════════════════════════════════
-//  NOISE PARAMETERS  —  edit these to taste, then reload
-// ═══════════════════════════════════════════════════════════════════════════
-const NOISE = {
-  dark: {
-    grain:    1,     // pixel block size in CSS px  (1 = crisp 1:1,  4 = coarse chunks)
-    density:  0.30,  // fraction of pixels that get noise  (0 = blank,  1 = solid fill)
-    alpha:    65,   // opacity of each noise pixel  (0–255)
-    lo:       18,    // darkest possible pixel brightness  (0–255)
-    hi:       80,   // brightest possible pixel brightness  (0–255)
-    rSpread:  30,    // red channel ± variance around the grey base
-    gSpread:  22,    // green channel ± variance
-    bSpread:  60,    // blue channel ± variance  (higher = more cyan/TV tint)
-    speed:    130,   // ms between redraws  (higher = slower shimmer,  0 = frozen still)
-  },
-  light: {
-    grain:    2,
-    density:  0.22,
-    alpha:    100,
-    lo:       95,
-    hi:       225,
-    rSpread:  30,
-    gSpread:  22,
-    bSpread:  60,
-    speed:    130,
-  },
-};
-// ═══════════════════════════════════════════════════════════════════════════
+  <div id="settings-panel">
+    <div class="sp-hdr">
+      <span class="sp-title">Settings</span>
+      <button class="sp-x" id="sp-close">✕</button>
+    </div>
 
+    <div class="sp-sec">
+      <div class="sp-stitle">Mood</div>
+      <div class="sp-presets">
+        <button class="sp-preset" data-preset="midnight">Midnight</button>
+        <button class="sp-preset" data-preset="ember">Ember</button>
+        <button class="sp-preset" data-preset="parchment">Parchment</button>
+        <button class="sp-preset" data-preset="vapor">Vapor</button>
+        <button class="sp-preset" data-preset="forest">Forest</button>
+      </div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Colors</div>
+      <div class="sp-row"><span class="sp-lbl">Background</span><input type="color" id="sp-bg" class="sp-color"></div>
+      <div class="sp-row"><span class="sp-lbl">Text</span><input type="color" id="sp-text" class="sp-color"></div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Grain</div>
+      <div class="sp-row"><span class="sp-lbl">Density</span><input type="range" id="sp-density" class="sp-slider" min="0" max="0.8" step="0.01"><span class="sp-val" id="sp-density-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Opacity</span><input type="range" id="sp-alpha" class="sp-slider" min="0" max="255" step="1"><span class="sp-val" id="sp-alpha-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Size</span><input type="range" id="sp-grain" class="sp-slider" min="1" max="6" step="1"><span class="sp-val" id="sp-grain-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Speed</span><input type="range" id="sp-speed" class="sp-slider" min="0" max="500" step="10"><span class="sp-val" id="sp-speed-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Warmth</span><input type="range" id="sp-warmth" class="sp-slider" min="-1" max="1" step="0.05"><span class="sp-val" id="sp-warmth-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Brightness</span><input type="range" id="sp-bright" class="sp-slider" min="0" max="200" step="3"><span class="sp-val" id="sp-bright-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Spread</span><input type="range" id="sp-spread" class="sp-slider" min="0" max="80" step="1"><span class="sp-val" id="sp-spread-v"></span></div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Typography</div>
+      <div class="sp-row"><span class="sp-lbl">Size</span><input type="range" id="sp-fontsize" class="sp-slider" min="13" max="30" step="1"><span class="sp-val" id="sp-fontsize-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Line height</span><input type="range" id="sp-lh" class="sp-slider" min="1.3" max="2.6" step="0.05"><span class="sp-val" id="sp-lh-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Spacing</span><input type="range" id="sp-ls" class="sp-slider" min="-0.02" max="0.12" step="0.005"><span class="sp-val" id="sp-ls-v"></span></div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Glow & Haze</div>
+      <div class="sp-row"><span class="sp-lbl">Text halo</span><input type="range" id="sp-halo" class="sp-slider" min="0" max="80" step="2"><span class="sp-val" id="sp-halo-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Halation</span><input type="range" id="sp-halation" class="sp-slider" min="0" max="1" step="0.05"><span class="sp-val" id="sp-halation-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Glow color</span><input type="color" id="sp-halcolor" class="sp-color"></div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Breathing</div>
+      <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-breathe"><span class="sp-tk"></span></label></div>
+      <div class="sp-row"><span class="sp-lbl">Speed</span><input type="range" id="sp-bspeed" class="sp-slider" min="1" max="14" step="0.5"><span class="sp-val" id="sp-bspeed-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Depth</span><input type="range" id="sp-bdepth" class="sp-slider" min="0.02" max="0.4" step="0.01"><span class="sp-val" id="sp-bdepth-v"></span></div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Vignette</div>
+      <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-vignette"><span class="sp-tk"></span></label></div>
+      <div class="sp-row"><span class="sp-lbl">Strength</span><input type="range" id="sp-vigstr" class="sp-slider" min="0" max="1" step="0.05"><span class="sp-val" id="sp-vigstr-v"></span></div>
+    </div>
+  </div>
+
+<script>
 // ── Icons ─────────────────────────────────────────────────────────────────
 const ICO = {
-  sun:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="2.5"/><line x1="7.5" y1="1" x2="7.5" y2="2.6"/><line x1="7.5" y1="12.4" x2="7.5" y2="14"/><line x1="1" y1="7.5" x2="2.6" y2="7.5"/><line x1="12.4" y1="7.5" x2="14" y2="7.5"/><line x1="3.2" y1="3.2" x2="4.2" y2="4.2"/><line x1="10.8" y1="10.8" x2="11.8" y2="11.8"/><line x1="11.8" y1="3.2" x2="10.8" y2="4.2"/><line x1="3.2" y1="11.8" x2="4.2" y2="10.8"/></svg>`,
-  moon: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 9.4A5.5 5.5 0 0 1 6.1 2.7 5.5 5.5 0 1 0 12.8 9.4z"/></svg>`,
-  eye:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7.5S3.5 2 7.5 2s6.5 5.5 6.5 5.5-2.5 5.5-6.5 5.5S1 7.5 1 7.5z"/><circle cx="7.5" cy="7.5" r="2"/></svg>`,
-  pen:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5l3 3-8 8H2.5v-3z"/></svg>`,
-  save: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7.5" y1="2" x2="7.5" y2="10.5"/><polyline points="4.2,7.2 7.5,10.5 10.8,7.2"/><line x1="1.5" y1="13.5" x2="13.5" y2="13.5"/></svg>`,
+  sun:      `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="2.5"/><line x1="7.5" y1="1" x2="7.5" y2="2.6"/><line x1="7.5" y1="12.4" x2="7.5" y2="14"/><line x1="1" y1="7.5" x2="2.6" y2="7.5"/><line x1="12.4" y1="7.5" x2="14" y2="7.5"/><line x1="3.2" y1="3.2" x2="4.2" y2="4.2"/><line x1="10.8" y1="10.8" x2="11.8" y2="11.8"/><line x1="11.8" y1="3.2" x2="10.8" y2="4.2"/><line x1="3.2" y1="11.8" x2="4.2" y2="10.8"/></svg>`,
+  moon:     `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 9.4A5.5 5.5 0 0 1 6.1 2.7 5.5 5.5 0 1 0 12.8 9.4z"/></svg>`,
+  eye:      `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7.5S3.5 2 7.5 2s6.5 5.5 6.5 5.5-2.5 5.5-6.5 5.5S1 7.5 1 7.5z"/><circle cx="7.5" cy="7.5" r="2"/></svg>`,
+  pen:      `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5l3 3-8 8H2.5v-3z"/></svg>`,
+  save:     `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7.5" y1="2" x2="7.5" y2="10.5"/><polyline points="4.2,7.2 7.5,10.5 10.8,7.2"/><line x1="1.5" y1="13.5" x2="13.5" y2="13.5"/></svg>`,
+  settings: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="1" y1="3.5" x2="14" y2="3.5"/><line x1="1" y1="7.5" x2="14" y2="7.5"/><line x1="1" y1="11.5" x2="14" y2="11.5"/><circle cx="4.5" cy="3.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="6" cy="11.5" r="1.7" fill="currentColor" stroke="none"/></svg>`,
 };
 
-// ── Theme ─────────────────────────────────────────────────────────────────
-const body   = document.body;
-const btheme = document.getElementById('btheme');
-let dark = localStorage.getItem('zen-dark') === '1';
+// ── Settings defaults & presets ────────────────────────────────────────────
+const DEFAULTS = {
+  dark: {
+    bg:'#0c0b11', text:'#dedad2',
+    grain:1, density:0.30, alpha:65, lo:18, spread:45, warmth:-0.33, noiseSpeed:130,
+    fontSize:18, lineHeight:1.9, letterSpacing:0.015,
+    haloRadius:24, halation:0, halationColor:'#ff8040',
+    breathe:false, breatheSpeed:4, breatheDepth:0.10,
+    vignette:false, vignetteStr:0.5,
+  },
+  light: {
+    bg:'#e8e2d6', text:'#1a1208',
+    grain:2, density:0.22, alpha:90, lo:150, spread:38, warmth:0.1, noiseSpeed:130,
+    fontSize:18, lineHeight:1.9, letterSpacing:0.015,
+    haloRadius:18, halation:0, halationColor:'#c87830',
+    breathe:false, breatheSpeed:4, breatheDepth:0.08,
+    vignette:false, vignetteStr:0.4,
+  },
+};
 
-function applyTheme() {
-  body.classList.toggle('dark', dark);
-  btheme.innerHTML = dark ? ICO.sun : ICO.moon;
-  resizeNoise(); // repaint with the correct palette
-  restartNoiseTimer();
+const PRESETS = {
+  midnight: { ...DEFAULTS.dark },
+  ember: {
+    bg:'#0f0800', text:'#f2bf5e',
+    grain:1, density:0.26, alpha:72, lo:10, spread:58, warmth:0.65, noiseSpeed:155,
+    fontSize:18, lineHeight:1.95, letterSpacing:0.015,
+    haloRadius:40, halation:0.42, halationColor:'#ff4400',
+    breathe:true, breatheSpeed:5, breatheDepth:0.10,
+    vignette:true, vignetteStr:0.58,
+  },
+  parchment: { ...DEFAULTS.light },
+  vapor: {
+    bg:'#0b0420', text:'#ddd0ff',
+    grain:1, density:0.26, alpha:52, lo:8, spread:38, warmth:-0.7, noiseSpeed:200,
+    fontSize:18, lineHeight:1.9, letterSpacing:0.015,
+    haloRadius:34, halation:0.44, halationColor:'#9040ff',
+    breathe:true, breatheSpeed:6, breatheDepth:0.13,
+    vignette:true, vignetteStr:0.62,
+  },
+  forest: {
+    bg:'#060e08', text:'#b8e8a8',
+    grain:2, density:0.26, alpha:50, lo:8, spread:32, warmth:-0.15, noiseSpeed:120,
+    fontSize:18, lineHeight:1.9, letterSpacing:0.015,
+    haloRadius:26, halation:0.18, halationColor:'#40ff60',
+    breathe:false, breatheSpeed:4, breatheDepth:0.10,
+    vignette:false, vignetteStr:0.5,
+  },
+};
+
+// Mutable settings state — populated at init
+const S = {};
+
+// ── Color utilities ────────────────────────────────────────────────────────
+function hexToRgb(h) {
+  h = h.replace('#','');
+  if (h.length === 3) h = h.split('').map(c=>c+c).join('');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function mixHex(a, b, t) {
+  const [ar,ag,ab] = hexToRgb(a), [br,bg,bb] = hexToRgb(b);
+  return '#'+[ar+(br-ar)*t, ag+(bg-ag)*t, ab+(bb-ab)*t]
+    .map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+}
+function getLum(h) {
+  return hexToRgb(h).map(v=>{v/=255;return v<.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);})
+    .reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
 }
 
-btheme.addEventListener('click', () => {
-  dark = !dark;
-  localStorage.setItem('zen-dark', dark ? '1' : '0');
-  applyTheme();
-});
+function computeTextShadow() {
+  const r = S.haloRadius, bg = S.bg;
+  let s = `0 0 ${r}px ${bg}, 0 0 ${Math.round(r*.42)}px ${bg}, 0 0 ${Math.round(r*.17)}px ${bg}`;
+  if (S.halation > 0) {
+    const hc = S.halationColor;
+    const a1 = Math.round(S.halation * 215).toString(16).padStart(2,'0');
+    const a2 = Math.round(S.halation * 130).toString(16).padStart(2,'0');
+    s += `, 0 0 ${Math.round(S.halation*52+12)}px ${hc}${a1}`;
+    s += `, 0 0 ${Math.round(S.halation*95+24)}px ${hc}${a2}`;
+  }
+  return s;
+}
 
-// ── Noise canvas ──────────────────────────────────────────────────────────
+function saveSettings() {
+  try { localStorage.setItem('zen-settings', JSON.stringify(S)); } catch(e) {}
+}
+
+// ── DOM refs ───────────────────────────────────────────────────────────────
+const body        = document.body;
+const btheme      = document.getElementById('btheme');
+const bprev       = document.getElementById('bprev');
+const bsave       = document.getElementById('bsave');
+const bsettings   = document.getElementById('bsettings');
+const editor      = document.getElementById('editor');
+const preview     = document.getElementById('preview');
+const wcEl        = document.getElementById('wc');
+const toast       = document.getElementById('toast');
+const wrap        = document.getElementById('wrap');
+const vignetteEl  = document.getElementById('vignette');
+const settingsPanel = document.getElementById('settings-panel');
 const noiseCanvas = document.getElementById('noise-canvas');
 const nCtx        = noiseCanvas.getContext('2d');
+
+bprev.innerHTML     = ICO.eye;
+bsave.innerHTML     = ICO.save;
+bsettings.innerHTML = ICO.settings;
+
+// ── Noise ──────────────────────────────────────────────────────────────────
 let nW, nH, noiseTimer;
 
+function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
+
+function drawNoise() {
+  const rS = Math.max(2, S.spread * (1 + S.warmth));
+  const bS = Math.max(2, S.spread * (1 - S.warmth));
+  const gS = S.spread * 0.6;
+  const range = 62;
+  const img = nCtx.createImageData(nW, nH);
+  const px  = img.data;
+  for (let i = 0; i < px.length; i += 4) {
+    if (Math.random() > S.density) continue;
+    const base = S.lo + Math.random() * range;
+    px[i]     = clamp(base + (Math.random()-.5) * rS * 2);
+    px[i + 1] = clamp(base + (Math.random()-.5) * gS * 2);
+    px[i + 2] = clamp(base + (Math.random()-.5) * bS * 2);
+    px[i + 3] = S.alpha;
+  }
+  nCtx.putImageData(img, 0, 0);
+}
+
 function resizeNoise() {
-  const cfg = dark ? NOISE.dark : NOISE.light;
-  nW = noiseCanvas.width  = Math.ceil(window.innerWidth  / cfg.grain);
-  nH = noiseCanvas.height = Math.ceil(window.innerHeight / cfg.grain);
+  const g = S.grain || 1;
+  nW = noiseCanvas.width  = Math.ceil(window.innerWidth  / g);
+  nH = noiseCanvas.height = Math.ceil(window.innerHeight / g);
   noiseCanvas.style.width  = window.innerWidth  + 'px';
   noiseCanvas.style.height = window.innerHeight + 'px';
   drawNoise();
 }
 
-function drawNoise() {
-  const cfg = dark ? NOISE.dark : NOISE.light;
-  const img = nCtx.createImageData(nW, nH);
-  const px  = img.data;
-  const range = cfg.hi - cfg.lo;
-
-  for (let i = 0; i < px.length; i += 4) {
-    if (Math.random() > cfg.density) continue;   // leave transparent
-    const base = cfg.lo + Math.random() * range;
-    px[i]     = clamp(base + (Math.random() - 0.5) * cfg.rSpread * 2);
-    px[i + 1] = clamp(base + (Math.random() - 0.5) * cfg.gSpread * 2);
-    px[i + 2] = clamp(base + (Math.random() - 0.5) * cfg.bSpread * 2);
-    px[i + 3] = cfg.alpha;
-  }
-  nCtx.putImageData(img, 0, 0);
-}
-
 function restartNoiseTimer() {
   clearInterval(noiseTimer);
-  const cfg = dark ? NOISE.dark : NOISE.light;
-  if (cfg.speed > 0) noiseTimer = setInterval(drawNoise, cfg.speed);
+  if (S.noiseSpeed > 0) noiseTimer = setInterval(drawNoise, S.noiseSpeed);
 }
-
-function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
 
 window.addEventListener('resize', () => { resizeNoise(); restartNoiseTimer(); });
 
-// ── Recency fade — viewport-fixed: transparent at top, opaque at cursor ──────
-// The mask tile is 100vh tall, offset by scrollY so it's always viewport-fixed.
-// The gradient end point tracks the cursor's viewport Y, updated every frame
-// during spring animation so the cursor line is always fully bright.
-const wrap = document.getElementById('wrap');
+// ── Recency fade (viewport-fixed mask) ────────────────────────────────────
 let cursorDocY = null;
 
 function updateFadeMask() {
@@ -295,24 +510,30 @@ function updateFadeMask() {
   wrap.style.maskPosition = pos;
 }
 
-// Disable user-initiated scroll (wheel/touch); programmatic scrollToY still works
-window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+window.addEventListener('wheel',     e => e.preventDefault(), { passive: false });
 window.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
-// ── Scroll spring — runs every frame, gently pulls scroll toward target ───
-// 8 % of remaining distance per frame ≈ 500 ms to settle (matches char fade)
+// ── Scroll spring + breathing ──────────────────────────────────────────────
 let scrollTarget = null;
+let breatheT0    = null;
 
 (function scrollLoop() {
   if (scrollTarget !== null) {
     const dist = scrollTarget - window.scrollY;
     if (Math.abs(dist) < 0.8) {
-      window.scrollTo(0, scrollTarget);
-      scrollTarget = null;
+      window.scrollTo(0, scrollTarget); scrollTarget = null;
     } else {
       window.scrollTo(0, window.scrollY + dist * 0.08);
     }
-    updateFadeMask(); // keep mask viewport-fixed during spring animation
+    updateFadeMask();
+  }
+  if (S.breathe) {
+    const now = performance.now();
+    if (!breatheT0) breatheT0 = now;
+    const o = 1 - S.breatheDepth * (1 - Math.cos((now - breatheT0) / (S.breatheSpeed * 1000) * Math.PI * 2)) / 2;
+    wrap.style.opacity = o;
+  } else if (breatheT0 !== null) {
+    breatheT0 = null; wrap.style.opacity = '';
   }
   requestAnimationFrame(scrollLoop);
 })();
@@ -323,26 +544,149 @@ function scrollToY(viewportY) {
   scrollTarget = window.scrollY + diff;
 }
 
-// ── Editor ────────────────────────────────────────────────────────────────
-const editor  = document.getElementById('editor');
-const preview = document.getElementById('preview');
-const bprev   = document.getElementById('bprev');
-const bsave   = document.getElementById('bsave');
-const wcEl    = document.getElementById('wc');
-const toast   = document.getElementById('toast');
+// ── Apply settings to DOM ──────────────────────────────────────────────────
+function applySettings() {
+  // Colors — inline on body to override any class-based vars
+  const lum    = getLum(S.bg);
+  const isDark = lum < 0.18;
+  body.style.setProperty('--bg',        S.bg);
+  body.style.setProperty('--text',      S.text);
+  body.style.setProperty('--muted',     mixHex(S.bg, S.text, 0.3));
+  body.style.setProperty('--btn-bg',    isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)');
+  body.style.setProperty('--btn-hover', isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.14)');
+  body.style.setProperty('--code-bg',   isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)');
 
-bprev.innerHTML = ICO.eye;
-bsave.innerHTML = ICO.save;
+  // Typography
+  [editor, preview].forEach(el => {
+    el.style.fontSize      = S.fontSize + 'px';
+    el.style.lineHeight    = S.lineHeight;
+    el.style.letterSpacing = S.letterSpacing + 'em';
+  });
 
+  // Glow
+  const shadow = computeTextShadow();
+  editor.style.textShadow  = shadow;
+  preview.style.textShadow = shadow;
+
+  // Noise
+  resizeNoise(); restartNoiseTimer();
+
+  // Vignette
+  vignetteEl.style.opacity = S.vignette ? S.vignetteStr : 0;
+
+  // Theme button icon
+  btheme.innerHTML = isDark ? ICO.sun : ICO.moon;
+
+  syncSettingsUI();
+  saveSettings();
+}
+
+// ── Settings UI sync ───────────────────────────────────────────────────────
+function syncSettingsUI() {
+  function sl(id, key, fmt) {
+    const el = document.getElementById(id);
+    const vEl = document.getElementById(id + '-v');
+    if (!el) return;
+    el.value = S[key];
+    const p = (parseFloat(el.value) - parseFloat(el.min)) / (parseFloat(el.max) - parseFloat(el.min)) * 100;
+    el.style.setProperty('--p', Math.max(0, Math.min(100, p)) + '%');
+    if (vEl) vEl.textContent = fmt ? fmt(S[key]) : S[key];
+  }
+  function co(id, key) { const e = document.getElementById(id); if (e) e.value = S[key]; }
+  function tg(id, key) { const e = document.getElementById(id); if (e) e.checked = S[key]; }
+
+  co('sp-bg', 'bg'); co('sp-text', 'text');
+  sl('sp-density',  'density',      v => Math.round(v * 100) + '%');
+  sl('sp-alpha',    'alpha',        v => Math.round(v));
+  sl('sp-grain',    'grain',        v => v + 'px');
+  sl('sp-speed',    'noiseSpeed',   v => v === 0 ? 'off' : Math.round(v) + 'ms');
+  sl('sp-warmth',   'warmth',       v => (v > 0 ? '+' : '') + v.toFixed(2));
+  sl('sp-bright',   'lo',           v => Math.round(v));
+  sl('sp-spread',   'spread',       v => Math.round(v));
+  sl('sp-fontsize', 'fontSize',     v => v + 'px');
+  sl('sp-lh',       'lineHeight',   v => v.toFixed(2));
+  sl('sp-ls',       'letterSpacing',v => v.toFixed(3));
+  sl('sp-halo',     'haloRadius',   v => v + 'px');
+  sl('sp-halation', 'halation',     v => v.toFixed(2));
+  co('sp-halcolor', 'halationColor');
+  tg('sp-breathe',  'breathe');
+  sl('sp-bspeed',   'breatheSpeed', v => v.toFixed(1) + 's');
+  sl('sp-bdepth',   'breatheDepth', v => Math.round(v * 100) + '%');
+  tg('sp-vignette', 'vignette');
+  sl('sp-vigstr',   'vignetteStr',  v => Math.round(v * 100) + '%');
+}
+
+function initSettingsUI() {
+  function sl(id, key, fmt, cb) {
+    const el  = document.getElementById(id);
+    const vEl = document.getElementById(id + '-v');
+    if (!el) return;
+    el.addEventListener('input', () => {
+      S[key] = parseFloat(el.value);
+      const p = (parseFloat(el.value) - parseFloat(el.min)) / (parseFloat(el.max) - parseFloat(el.min)) * 100;
+      el.style.setProperty('--p', Math.max(0, Math.min(100, p)) + '%');
+      if (vEl) vEl.textContent = fmt ? fmt(S[key]) : S[key];
+      cb ? cb() : applySettings();
+    });
+  }
+  function co(id, key) {
+    const e = document.getElementById(id);
+    if (e) e.addEventListener('input', () => { S[key] = e.value; applySettings(); });
+  }
+  function tg(id, key) {
+    const e = document.getElementById(id);
+    if (e) e.addEventListener('change', () => { S[key] = e.checked; applySettings(); });
+  }
+
+  co('sp-bg', 'bg'); co('sp-text', 'text');
+  sl('sp-density',  'density',      v => Math.round(v * 100) + '%');
+  sl('sp-alpha',    'alpha',        v => Math.round(v));
+  sl('sp-grain',    'grain',        v => v + 'px');
+  sl('sp-speed',    'noiseSpeed',   v => v === 0 ? 'off' : Math.round(v) + 'ms');
+  sl('sp-warmth',   'warmth',       v => (v > 0 ? '+' : '') + v.toFixed(2));
+  sl('sp-bright',   'lo',           v => Math.round(v));
+  sl('sp-spread',   'spread',       v => Math.round(v));
+  sl('sp-fontsize', 'fontSize',     v => v + 'px');
+  sl('sp-lh',       'lineHeight',   v => v.toFixed(2));
+  sl('sp-ls',       'letterSpacing',v => v.toFixed(3));
+  sl('sp-halo',     'haloRadius',   v => v + 'px');
+  sl('sp-halation', 'halation',     v => v.toFixed(2));
+  co('sp-halcolor', 'halationColor');
+  tg('sp-breathe',  'breathe');
+  sl('sp-bspeed',   'breatheSpeed', v => v.toFixed(1) + 's');
+  sl('sp-bdepth',   'breatheDepth', v => Math.round(v * 100) + '%');
+  tg('sp-vignette', 'vignette');
+  sl('sp-vigstr',   'vignetteStr',  v => Math.round(v * 100) + '%');
+
+  document.querySelectorAll('.sp-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = PRESETS[btn.dataset.preset];
+      if (!p) return;
+      Object.assign(S, p);
+      applySettings();
+      document.querySelectorAll('.sp-preset').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  bsettings.addEventListener('click', () => settingsPanel.classList.toggle('open'));
+  document.getElementById('sp-close').addEventListener('click', () => settingsPanel.classList.remove('open'));
+}
+
+// ── Theme toggle ───────────────────────────────────────────────────────────
+btheme.addEventListener('click', () => {
+  const goLight = getLum(S.bg) < 0.18;
+  Object.assign(S, goLight ? DEFAULTS.light : DEFAULTS.dark);
+  applySettings();
+});
+
+// ── Editor content ─────────────────────────────────────────────────────────
 const stored = localStorage.getItem('zen-content');
 if (stored) {
   editor.textContent = stored.endsWith('\n') ? stored : stored + '\n';
-  const sel = window.getSelection();
-  const r   = document.createRange();
-  r.selectNodeContents(editor);
-  r.collapse(false);
-  sel.removeAllRanges();
-  sel.addRange(r);
+  const sel = window.getSelection(), r = document.createRange();
+  r.selectNodeContents(editor); r.collapse(false);
+  sel.removeAllRanges(); sel.addRange(r);
   requestAnimationFrame(() => {
     const s = window.getSelection();
     if (!s || !s.rangeCount) return;
@@ -350,8 +694,7 @@ if (stored) {
     if (rects.length) {
       const mid = rects[0].top + rects[0].height / 2;
       cursorDocY = mid + window.scrollY;
-      scrollToY(mid);
-      updateFadeMask();
+      scrollToY(mid); updateFadeMask();
     }
   });
 }
@@ -373,32 +716,24 @@ function updateWC() {
   wcTimer = setTimeout(() => wcEl.classList.remove('on'), 2400);
 }
 
-// ── Character insertion ───────────────────────────────────────────────────
+// ── Character insertion ────────────────────────────────────────────────────
 function insertChar(ch) {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount) return;
   const range = sel.getRangeAt(0);
   range.deleteContents();
-
   const span = document.createElement('span');
-  span.className   = 'c';
-  span.textContent = ch;
+  span.className = 'c'; span.textContent = ch;
   range.insertNode(span);
-
   const nr = document.createRange();
-  nr.setStartAfter(span);
-  nr.collapse(true);
-  sel.removeAllRanges();
-  sel.addRange(nr);
-
+  nr.setStartAfter(span); nr.collapse(true);
+  sel.removeAllRanges(); sel.addRange(nr);
   requestAnimationFrame(() => {
     const r   = span.getBoundingClientRect();
     const mid = r.top + r.height / 2;
     cursorDocY = mid + window.scrollY;
-    scrollToY(mid);
-    updateFadeMask();
+    scrollToY(mid); updateFadeMask();
   });
-
   saveContent(); updateWC(); updateTitle();
 }
 
@@ -407,61 +742,41 @@ function insertNewline() {
   if (!sel || !sel.rangeCount) return;
   const range = sel.getRangeAt(0);
   range.deleteContents();
-
   const nl = document.createTextNode('\n');
   range.insertNode(nl);
-
-  // Invisible probe on the new line gives us its Y position
   const probe = document.createElement('span');
   probe.style.cssText = 'opacity:0;font-size:inherit;line-height:inherit;';
-  probe.textContent   = '​';
+  probe.textContent = '​';
   const pr = document.createRange();
-  pr.setStartAfter(nl);
-  pr.collapse(true);
-  pr.insertNode(probe);
-
+  pr.setStartAfter(nl); pr.collapse(true); pr.insertNode(probe);
   if (!probe.nextSibling) editor.appendChild(document.createTextNode('\n'));
-
   const nr = document.createRange();
-  nr.setStartAfter(probe);
-  nr.collapse(true);
-  sel.removeAllRanges();
-  sel.addRange(nr);
-
+  nr.setStartAfter(probe); nr.collapse(true);
+  sel.removeAllRanges(); sel.addRange(nr);
   requestAnimationFrame(() => {
-    const rect      = probe.getBoundingClientRect();
-    const afterProbe = probe.nextSibling;
+    const rect = probe.getBoundingClientRect();
+    const after = probe.nextSibling;
     probe.parentNode.removeChild(probe);
-
     const rr = document.createRange();
-    if (afterProbe) { rr.setStartBefore(afterProbe); }
-    else            { rr.setStartAfter(nl); }
-    rr.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(rr);
-
+    if (after) rr.setStartBefore(after); else rr.setStartAfter(nl);
+    rr.collapse(true); sel.removeAllRanges(); sel.addRange(rr);
     const mid = rect.top + rect.height / 2;
     cursorDocY = mid + window.scrollY;
-    scrollToY(mid);
-    updateFadeMask();
+    scrollToY(mid); updateFadeMask();
   });
-
   saveContent(); updateWC();
 }
 
 editor.addEventListener('beforeinput', e => {
   if (e.inputType === 'insertText') {
-    e.preventDefault();
-    if (e.data) insertChar(e.data);
+    e.preventDefault(); if (e.data) insertChar(e.data);
   } else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
-    e.preventDefault();
-    insertNewline();
+    e.preventDefault(); insertNewline();
   }
 });
-
 editor.addEventListener('input', () => { saveContent(); updateWC(); updateTitle(); });
 
-// ── Markdown preview ──────────────────────────────────────────────────────
+// ── Markdown preview ───────────────────────────────────────────────────────
 let isPrev = false;
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function inl(s) {
@@ -477,26 +792,23 @@ function inl(s) {
 function renderMd(text) {
   const lines = text.split('\n');
   let out='',inCode=false,codeBuf='',inList=null,listBuf='';
-  const flush=()=>{ if(inList){out+=`<${inList}>${listBuf}</${inList}>`;inList=null;listBuf='';} };
-  for(const line of lines){
-    if(line.startsWith('```')){
-      if(inCode){out+=`<pre><code>${esc(codeBuf.replace(/\n$/,''))}</code></pre>`;inCode=false;codeBuf='';}
-      else{flush();inCode=true;} continue;
-    }
-    if(inCode){codeBuf+=line+'\n';continue;}
-    const hm=line.match(/^(#{1,6})\s+(.+)/);
-    if(hm){flush();out+=`<h${hm[1].length}>${inl(hm[2])}</h${hm[1].length}>`;continue;}
-    if(/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())){flush();out+='<hr>';continue;}
-    if(line.startsWith('> ')){flush();out+=`<blockquote>${inl(line.slice(2))}</blockquote>`;continue;}
-    const ul=line.match(/^[ \t]*[*\-+]\s+(.+)/);
-    if(ul){if(inList!=='ul'){flush();inList='ul';}listBuf+=`<li>${inl(ul[1])}</li>`;continue;}
-    const ol=line.match(/^[ \t]*\d+\.\s+(.+)/);
-    if(ol){if(inList!=='ol'){flush();inList='ol';}listBuf+=`<li>${inl(ol[1])}</li>`;continue;}
-    if(!line.trim()){flush();out+='<br>';continue;}
-    flush();out+=`<p>${inl(line)}</p>`;
+  const flush=()=>{if(inList){out+=`<${inList}>${listBuf}</${inList}>`;inList=null;listBuf='';}};
+  for (const line of lines) {
+    if (line.startsWith('```')) { if(inCode){out+=`<pre><code>${esc(codeBuf.replace(/\n$/,''))}</code></pre>`;inCode=false;codeBuf='';}else{flush();inCode=true;} continue; }
+    if (inCode) { codeBuf+=line+'\n'; continue; }
+    const hm = line.match(/^(#{1,6})\s+(.+)/);
+    if (hm) { flush(); out+=`<h${hm[1].length}>${inl(hm[2])}</h${hm[1].length}>`; continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { flush(); out+='<hr>'; continue; }
+    if (line.startsWith('> ')) { flush(); out+=`<blockquote>${inl(line.slice(2))}</blockquote>`; continue; }
+    const ul = line.match(/^[ \t]*[*\-+]\s+(.+)/);
+    if (ul) { if(inList!=='ul'){flush();inList='ul';} listBuf+=`<li>${inl(ul[1])}</li>`; continue; }
+    const ol = line.match(/^[ \t]*\d+\.\s+(.+)/);
+    if (ol) { if(inList!=='ol'){flush();inList='ol';} listBuf+=`<li>${inl(ol[1])}</li>`; continue; }
+    if (!line.trim()) { flush(); out+='<br>'; continue; }
+    flush(); out+=`<p>${inl(line)}</p>`;
   }
   flush();
-  if(inCode)out+=`<pre><code>${esc(codeBuf)}</code></pre>`;
+  if (inCode) out+=`<pre><code>${esc(codeBuf)}</code></pre>`;
   return out;
 }
 function togglePreview() {
@@ -513,25 +825,49 @@ function togglePreview() {
 }
 bprev.addEventListener('click', togglePreview);
 
-// ── Save ──────────────────────────────────────────────────────────────────
+// ── Save ───────────────────────────────────────────────────────────────────
 function save() {
-  const blob=new Blob([getContent()],{type:'text/markdown;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=Object.assign(document.createElement('a'),{href:url,download:`note-${new Date().toISOString().slice(0,10)}.md`});
+  const blob = new Blob([getContent()], {type:'text/markdown;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {href:url, download:`note-${new Date().toISOString().slice(0,10)}.md`});
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast('Saved');
 }
-function showToast(msg){toast.textContent=msg;toast.classList.add('on');setTimeout(()=>toast.classList.remove('on'),1600);}
+function showToast(msg) {
+  toast.textContent = msg; toast.classList.add('on');
+  setTimeout(() => toast.classList.remove('on'), 1600);
+}
 bsave.addEventListener('click', save);
 document.addEventListener('keydown', e => {
   const mod = e.metaKey || e.ctrlKey;
-  if (mod && e.key==='s'){e.preventDefault();save();}
-  if (mod && e.key==='p'){e.preventDefault();togglePreview();}
+  if (mod && e.key==='s') { e.preventDefault(); save(); }
+  if (mod && e.key==='p') { e.preventDefault(); togglePreview(); }
+  if (e.key==='Escape')   { settingsPanel.classList.remove('open'); }
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────
-applyTheme();   // draws noise + sets interval
-editor.focus();
+// ── Init ───────────────────────────────────────────────────────────────────
+(function init() {
+  let loaded = false;
+  try {
+    const raw = localStorage.getItem('zen-settings');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.bg === 'string' && typeof parsed.density === 'number') {
+        Object.assign(S, parsed);
+        loaded = true;
+      }
+    }
+  } catch(e) {}
+
+  if (!loaded) {
+    const wasDark = localStorage.getItem('zen-dark') !== '0';
+    Object.assign(S, wasDark ? DEFAULTS.dark : DEFAULTS.light);
+  }
+
+  applySettings();
+  initSettingsUI();
+  editor.focus();
+})();
 </script>
 </body>
 </html>
