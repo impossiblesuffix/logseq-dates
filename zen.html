@@ -54,8 +54,8 @@
       z-index: 2;
       display: flex;
       justify-content: center;
-      -webkit-mask-size: 100% 100%;
-      mask-size: 100% 100%;
+      -webkit-mask-size: 100% 100vh;
+      mask-size: 100% 100vh;
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
     }
@@ -277,16 +277,24 @@ function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
 
 window.addEventListener('resize', () => { resizeNoise(); restartNoiseTimer(); });
 
-// ── Recency fade — older text fades toward the top; current line is fully bright
+// ── Recency fade — viewport-fixed: transparent at top, opaque at cursor ──────
+// The mask tile is 100vh tall, offset by scrollY so it's always viewport-fixed.
+// The gradient end point tracks the cursor's viewport Y, updated every frame
+// during spring animation so the cursor line is always fully bright.
 const wrap = document.getElementById('wrap');
-function updateFadeMask(cursorDocY) {
-  const wrapH = wrap.scrollHeight;
-  if (!wrapH) return;
-  const pct = Math.min(98, Math.max(2, (cursorDocY / wrapH) * 100));
-  const g = `linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, black ${pct}%)`;
+let cursorDocY = null;
+
+function updateFadeMask() {
+  if (cursorDocY === null) return;
+  const vy  = Math.max(1, cursorDocY - window.scrollY);
+  const g   = `linear-gradient(to bottom, transparent 0px, black ${Math.round(vy)}px)`;
+  const pos = `0 ${window.scrollY}px`;
   wrap.style.webkitMaskImage = g;
   wrap.style.maskImage = g;
+  wrap.style.webkitMaskPosition = pos;
+  wrap.style.maskPosition = pos;
 }
+
 // Disable user-initiated scroll (wheel/touch); programmatic scrollToY still works
 window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
 window.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
@@ -304,6 +312,7 @@ let scrollTarget = null;
     } else {
       window.scrollTo(0, window.scrollY + dist * 0.08);
     }
+    updateFadeMask(); // keep mask viewport-fixed during spring animation
   }
   requestAnimationFrame(scrollLoop);
 })();
@@ -340,8 +349,9 @@ if (stored) {
     const rects = s.getRangeAt(0).getClientRects();
     if (rects.length) {
       const mid = rects[0].top + rects[0].height / 2;
+      cursorDocY = mid + window.scrollY;
       scrollToY(mid);
-      updateFadeMask(mid + window.scrollY);
+      updateFadeMask();
     }
   });
 }
@@ -384,8 +394,9 @@ function insertChar(ch) {
   requestAnimationFrame(() => {
     const r   = span.getBoundingClientRect();
     const mid = r.top + r.height / 2;
+    cursorDocY = mid + window.scrollY;
     scrollToY(mid);
-    updateFadeMask(mid + window.scrollY);
+    updateFadeMask();
   });
 
   saveContent(); updateWC(); updateTitle();
@@ -430,8 +441,9 @@ function insertNewline() {
     sel.addRange(rr);
 
     const mid = rect.top + rect.height / 2;
+    cursorDocY = mid + window.scrollY;
     scrollToY(mid);
-    updateFadeMask(mid + window.scrollY);
+    updateFadeMask();
   });
 
   saveContent(); updateWC();
