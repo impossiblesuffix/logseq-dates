@@ -378,6 +378,16 @@
     </div>
 
     <div class="sp-sec">
+      <div class="sp-stitle">Shadow</div>
+      <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-dropshadow"><span class="sp-tk"></span></label></div>
+      <div class="sp-row"><span class="sp-lbl">Angle</span><input type="range" id="sp-ds-angle" class="sp-slider" min="0" max="360" step="5"><span class="sp-val" id="sp-ds-angle-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Distance</span><input type="range" id="sp-ds-dist" class="sp-slider" min="0" max="20" step="0.5"><span class="sp-val" id="sp-ds-dist-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Blur</span><input type="range" id="sp-ds-blur" class="sp-slider" min="0" max="30" step="1"><span class="sp-val" id="sp-ds-blur-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Color</span><input type="color" id="sp-ds-color" class="sp-color"></div>
+      <div class="sp-row"><span class="sp-lbl">Opacity</span><input type="range" id="sp-ds-alpha" class="sp-slider" min="0" max="1" step="0.05"><span class="sp-val" id="sp-ds-alpha-v"></span></div>
+    </div>
+
+    <div class="sp-sec">
       <div class="sp-stitle">Breathing</div>
       <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-breathe"><span class="sp-tk"></span></label></div>
       <div class="sp-row"><span class="sp-lbl">Mode</span>
@@ -448,6 +458,7 @@ const DEFAULTS = {
     vignette:false, vignetteStr:0.5,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
+    dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
   },
   light: {
     bg:'#e8e2d6', text:'#1a1208',
@@ -458,6 +469,7 @@ const DEFAULTS = {
     vignette:false, vignetteStr:0.4,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
+    dropShadow:false, dropShadowAngle:135, dropShadowDist:2, dropShadowBlur:6, dropShadowColor:'#000000', dropShadowAlpha:0.4,
   },
 };
 
@@ -472,6 +484,7 @@ const PRESETS = {
     vignette:true, vignetteStr:0.58,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:10, colorBreathRange:8,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
+    dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
   },
   parchment: { ...DEFAULTS.light },
   vapor: {
@@ -483,6 +496,7 @@ const PRESETS = {
     vignette:true, vignetteStr:0.62,
     colorBreath:true, bgColorBreath:true, colorBreathSpeed:14, colorBreathRange:22,
     textMotion:'float', textMotionAmt:3, textMotionSpeed:12,
+    dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
   },
   forest: {
     bg:'#060e08', text:'#b8e8a8',
@@ -493,6 +507,7 @@ const PRESETS = {
     vignette:false, vignetteStr:0.5,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
+    dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
   },
 };
 
@@ -537,6 +552,16 @@ function computeTextShadow() {
     const a2 = Math.round(S.halation * 130).toString(16).padStart(2,'0');
     s += `, 0 0 ${Math.round(S.halation*52+12)}px ${hc}${a1}`;
     s += `, 0 0 ${Math.round(S.halation*95+24)}px ${hc}${a2}`;
+  }
+  if (S.dropShadow) {
+    const ang  = (S.dropShadowAngle ?? 135) * Math.PI / 180;
+    const d    = S.dropShadowDist  ?? 3;
+    const bl   = S.dropShadowBlur  ?? 8;
+    const x    = (d * Math.sin(ang)).toFixed(2);
+    const y    = (d * Math.cos(ang)).toFixed(2);
+    const col  = S.dropShadowColor ?? '#000000';
+    const aHex = Math.round((S.dropShadowAlpha ?? 0.6) * 255).toString(16).padStart(2,'0');
+    s += `, ${x}px ${y}px ${bl}px ${col}${aHex}`;
   }
   return s;
 }
@@ -873,6 +898,12 @@ function syncSettingsUI() {
   sl('sp-halo',     'haloRadius',   v => v + 'px');
   sl('sp-halation', 'halation',     v => v.toFixed(2));
   co('sp-halcolor', 'halationColor');
+  tg('sp-dropshadow', 'dropShadow');
+  sl('sp-ds-angle', 'dropShadowAngle', v => Math.round(v) + '°');
+  sl('sp-ds-dist',  'dropShadowDist',  v => v.toFixed(1) + 'px');
+  sl('sp-ds-blur',  'dropShadowBlur',  v => Math.round(v) + 'px');
+  co('sp-ds-color', 'dropShadowColor');
+  sl('sp-ds-alpha', 'dropShadowAlpha', v => Math.round(v * 100) + '%');
   tg('sp-breathe',  'breathe');
   se('sp-breathe-mode', 'breatheMode');
   sl('sp-bspeed',   'breatheSpeed', v => v.toFixed(1) + 's');
@@ -930,6 +961,12 @@ function initSettingsUI() {
   sl('sp-halo',     'haloRadius',   v => v + 'px');
   sl('sp-halation', 'halation',     v => v.toFixed(2));
   co('sp-halcolor', 'halationColor');
+  tg('sp-dropshadow', 'dropShadow');
+  sl('sp-ds-angle', 'dropShadowAngle', v => Math.round(v) + '°');
+  sl('sp-ds-dist',  'dropShadowDist',  v => v.toFixed(1) + 'px');
+  sl('sp-ds-blur',  'dropShadowBlur',  v => Math.round(v) + 'px');
+  co('sp-ds-color', 'dropShadowColor');
+  sl('sp-ds-alpha', 'dropShadowAlpha', v => Math.round(v * 100) + '%');
   tg('sp-breathe',  'breathe');
   se('sp-breathe-mode', 'breatheMode');
   sl('sp-bspeed',   'breatheSpeed', v => v.toFixed(1) + 's');
@@ -1014,26 +1051,6 @@ function updateWC() {
 }
 
 // ── Character insertion ────────────────────────────────────────────────────
-function insertChar(ch) {
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount) return;
-  const range = sel.getRangeAt(0);
-  range.deleteContents();
-  const span = document.createElement('span');
-  span.className = 'c'; span.textContent = ch;
-  range.insertNode(span);
-  const nr = document.createRange();
-  nr.setStartAfter(span); nr.collapse(true);
-  sel.removeAllRanges(); sel.addRange(nr);
-  requestAnimationFrame(() => {
-    const r   = span.getBoundingClientRect();
-    const mid = r.top + r.height / 2;
-    cursorDocY = mid + window.scrollY;
-    scrollToY(mid, true); updateFadeMask();
-  });
-  saveContent(); updateWC(); updateTitle();
-}
-
 function insertNewline() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount) return;
@@ -1041,37 +1058,44 @@ function insertNewline() {
   range.deleteContents();
   const nl = document.createTextNode('\n');
   range.insertNode(nl);
-  const probe = document.createElement('span');
-  probe.style.cssText = 'opacity:0;font-size:inherit;line-height:inherit;';
-  probe.textContent = '​';
-  const pr = document.createRange();
-  pr.setStartAfter(nl); pr.collapse(true); pr.insertNode(probe);
-  if (!probe.nextSibling) editor.appendChild(document.createTextNode('\n'));
+  if (!nl.nextSibling) editor.appendChild(document.createTextNode('\n'));
   const nr = document.createRange();
-  nr.setStartAfter(probe); nr.collapse(true);
+  nr.setStartAfter(nl); nr.collapse(true);
   sel.removeAllRanges(); sel.addRange(nr);
-  requestAnimationFrame(() => {
-    const rect = probe.getBoundingClientRect();
-    const after = probe.nextSibling;
-    probe.parentNode.removeChild(probe);
-    const rr = document.createRange();
-    if (after) rr.setStartBefore(after); else rr.setStartAfter(nl);
-    rr.collapse(true); sel.removeAllRanges(); sel.addRange(rr);
-    const mid = rect.top + rect.height / 2;
-    cursorDocY = mid + window.scrollY;
-    scrollToY(mid, true); updateFadeMask();
-  });
   saveContent(); updateWC();
+  requestAnimationFrame(() => {
+    const s = window.getSelection();
+    if (!s || !s.rangeCount) return;
+    const rect = s.getRangeAt(0).getBoundingClientRect();
+    const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
+    if (viewY > 0) { cursorDocY = viewY + window.scrollY; scrollToY(viewY, true); updateFadeMask(); }
+  });
 }
 
 editor.addEventListener('beforeinput', e => {
-  if (e.inputType === 'insertText') {
-    e.preventDefault(); if (e.data) insertChar(e.data);
-  } else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+  if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
     e.preventDefault(); insertNewline();
   }
 });
-editor.addEventListener('input', () => { saveContent(); updateWC(); updateTitle(); });
+editor.addEventListener('input', () => {
+  saveContent(); updateWC(); updateTitle();
+  requestAnimationFrame(() => {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
+    if (viewY > 0) { cursorDocY = viewY + window.scrollY; scrollToY(viewY, true); updateFadeMask(); }
+  });
+});
+editor.addEventListener('pointerup', () => {
+  requestAnimationFrame(() => {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
+    if (viewY > 0) { cursorDocY = viewY + window.scrollY; updateFadeMask(); }
+  });
+});
 
 
 // ── Markdown preview ───────────────────────────────────────────────────────
