@@ -282,11 +282,36 @@
       transition: border-color 0.15s, color 0.15s, background 0.15s;
     }
     .sp-save-btn:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.05); }
+
+    .sp-select {
+      flex: 1; height: 22px;
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      font-family: 'Quicksand', sans-serif; font-size: 10px; font-weight: 500;
+      padding: 0 6px; outline: none; cursor: pointer;
+      -webkit-appearance: none; appearance: none;
+    }
+    .sp-select option { background: #0c0b11; color: rgba(255,255,255,0.8); }
+
+    #wave-overlay {
+      position: fixed; left: 0; right: 0;
+      top: 0; height: 100vh;
+      pointer-events: none; z-index: 3; opacity: 0;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(0,0,0,0.95) 35%,
+        rgba(0,0,0,0.95) 65%,
+        transparent 100%
+      );
+    }
   </style>
 </head>
 <body>
   <canvas id="noise-canvas"></canvas>
   <div id="vignette"></div>
+  <div id="wave-overlay"></div>
 
   <div id="wrap">
     <div id="editor" contenteditable="true" data-ph="Begin writing…" spellcheck="true"></div>
@@ -353,6 +378,13 @@
     <div class="sp-sec">
       <div class="sp-stitle">Breathing</div>
       <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-breathe"><span class="sp-tk"></span></label></div>
+      <div class="sp-row"><span class="sp-lbl">Mode</span>
+        <select id="sp-breathe-mode" class="sp-select">
+          <option value="uniform">Uniform</option>
+          <option value="wave">Wave</option>
+          <option value="pulse">Pulse</option>
+        </select>
+      </div>
       <div class="sp-row"><span class="sp-lbl">Speed</span><input type="range" id="sp-bspeed" class="sp-slider" min="1" max="14" step="0.5"><span class="sp-val" id="sp-bspeed-v"></span></div>
       <div class="sp-row"><span class="sp-lbl">Depth</span><input type="range" id="sp-bdepth" class="sp-slider" min="0.02" max="0.4" step="0.01"><span class="sp-val" id="sp-bdepth-v"></span></div>
     </div>
@@ -361,6 +393,19 @@
       <div class="sp-stitle">Vignette</div>
       <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-vignette"><span class="sp-tk"></span></label></div>
       <div class="sp-row"><span class="sp-lbl">Strength</span><input type="range" id="sp-vigstr" class="sp-slider" min="0" max="1" step="0.05"><span class="sp-val" id="sp-vigstr-v"></span></div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Motion</div>
+      <div class="sp-row"><span class="sp-lbl">Type</span>
+        <select id="sp-motion-type" class="sp-select">
+          <option value="none">None</option>
+          <option value="float">Float</option>
+          <option value="drift">Drift</option>
+        </select>
+      </div>
+      <div class="sp-row"><span class="sp-lbl">Amount</span><input type="range" id="sp-motion-amt" class="sp-slider" min="1" max="20" step="0.5"><span class="sp-val" id="sp-motion-amt-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Speed</span><input type="range" id="sp-motion-speed" class="sp-slider" min="2" max="40" step="0.5"><span class="sp-val" id="sp-motion-speed-v"></span></div>
     </div>
 
     <div class="sp-sec">
@@ -397,18 +442,20 @@ const DEFAULTS = {
     grain:1, density:0.30, alpha:65, lo:18, spread:45, warmth:-0.33, noiseSpeed:130,
     fontSize:18, lineHeight:1.9, letterSpacing:0.015,
     haloRadius:24, halation:0, halationColor:'#ff8040',
-    breathe:false, breatheSpeed:4, breatheDepth:0.10,
+    breathe:false, breatheSpeed:4, breatheDepth:0.10, breatheMode:'uniform',
     vignette:false, vignetteStr:0.5,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
+    textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
   },
   light: {
     bg:'#e8e2d6', text:'#1a1208',
     grain:2, density:0.22, alpha:90, lo:150, spread:38, warmth:0.1, noiseSpeed:130,
     fontSize:18, lineHeight:1.9, letterSpacing:0.015,
     haloRadius:18, halation:0, halationColor:'#c87830',
-    breathe:false, breatheSpeed:4, breatheDepth:0.08,
+    breathe:false, breatheSpeed:4, breatheDepth:0.08, breatheMode:'uniform',
     vignette:false, vignetteStr:0.4,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
+    textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
   },
 };
 
@@ -419,9 +466,10 @@ const PRESETS = {
     grain:1, density:0.26, alpha:72, lo:10, spread:58, warmth:0.65, noiseSpeed:155,
     fontSize:18, lineHeight:1.95, letterSpacing:0.015,
     haloRadius:40, halation:0.42, halationColor:'#ff4400',
-    breathe:true, breatheSpeed:5, breatheDepth:0.10,
+    breathe:true, breatheSpeed:5, breatheDepth:0.10, breatheMode:'pulse',
     vignette:true, vignetteStr:0.58,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:10, colorBreathRange:8,
+    textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
   },
   parchment: { ...DEFAULTS.light },
   vapor: {
@@ -429,18 +477,20 @@ const PRESETS = {
     grain:1, density:0.26, alpha:52, lo:8, spread:38, warmth:-0.7, noiseSpeed:200,
     fontSize:18, lineHeight:1.9, letterSpacing:0.015,
     haloRadius:34, halation:0.44, halationColor:'#9040ff',
-    breathe:true, breatheSpeed:6, breatheDepth:0.13,
+    breathe:true, breatheSpeed:6, breatheDepth:0.13, breatheMode:'wave',
     vignette:true, vignetteStr:0.62,
     colorBreath:true, bgColorBreath:true, colorBreathSpeed:14, colorBreathRange:22,
+    textMotion:'float', textMotionAmt:3, textMotionSpeed:12,
   },
   forest: {
     bg:'#060e08', text:'#b8e8a8',
     grain:2, density:0.26, alpha:50, lo:8, spread:32, warmth:-0.15, noiseSpeed:120,
     fontSize:18, lineHeight:1.9, letterSpacing:0.015,
     haloRadius:26, halation:0.18, halationColor:'#40ff60',
-    breathe:false, breatheSpeed:4, breatheDepth:0.10,
+    breathe:false, breatheSpeed:4, breatheDepth:0.10, breatheMode:'uniform',
     vignette:false, vignetteStr:0.5,
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
+    textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
   },
 };
 
@@ -538,6 +588,7 @@ const wcEl        = document.getElementById('wc');
 const toast       = document.getElementById('toast');
 const wrap        = document.getElementById('wrap');
 const vignetteEl  = document.getElementById('vignette');
+const waveOverlay = document.getElementById('wave-overlay');
 const settingsPanel = document.getElementById('settings-panel');
 const noiseCanvas = document.getElementById('noise-canvas');
 const nCtx        = noiseCanvas.getContext('2d');
@@ -607,6 +658,7 @@ let scrollTarget     = null;
 let breatheT0        = null;
 let colorBreathT0    = null;
 let bgColorBreathT0  = null;
+let textMotionT0     = null;
 
 (function scrollLoop() {
   if (scrollTarget !== null) {
@@ -618,33 +670,80 @@ let bgColorBreathT0  = null;
     }
   }
   updateFadeMask();
+
+  // ── Breathing ─────────────────────────────────────────────────────────────
   if (S.breathe) {
     const now = performance.now();
     if (!breatheT0) breatheT0 = now;
-    const o = 1 - S.breatheDepth * (1 - Math.cos((now - breatheT0) / (S.breatheSpeed * 1000) * Math.PI * 2)) / 2;
-    wrap.style.opacity = o;
+    const cycleMs = S.breatheSpeed * 1000;
+    const elapsed = now - breatheT0;
+    const mode = S.breatheMode || 'uniform';
+    if (mode === 'wave') {
+      wrap.style.opacity = '';
+      const progress = (elapsed % cycleMs) / cycleMs;
+      waveOverlay.style.transform = `translateY(${(progress * 200 - 100).toFixed(2)}vh)`;
+      waveOverlay.style.opacity = S.breatheDepth * 2.5;
+    } else if (mode === 'pulse') {
+      waveOverlay.style.opacity = 0;
+      // Double-beat: sharp dips at 1/4 and 3/4 of cycle
+      const t = (elapsed % cycleMs) / cycleMs;
+      const beat = Math.pow(Math.abs(Math.sin(t * Math.PI * 2)), 6);
+      wrap.style.opacity = 1 - S.breatheDepth * beat;
+    } else {
+      waveOverlay.style.opacity = 0;
+      const o = 1 - S.breatheDepth * (1 - Math.cos(elapsed / cycleMs * Math.PI * 2)) / 2;
+      wrap.style.opacity = o;
+    }
   } else if (breatheT0 !== null) {
-    breatheT0 = null; wrap.style.opacity = '';
+    breatheT0 = null;
+    wrap.style.opacity = '';
+    waveOverlay.style.opacity = 0;
   }
+
+  // ── Text colour shift ──────────────────────────────────────────────────────
   if (S.colorBreath) {
     const now = performance.now();
     if (!colorBreathT0) colorBreathT0 = now;
     const deg = S.colorBreathRange * Math.sin((now - colorBreathT0) / (S.colorBreathSpeed * 1000) * Math.PI * 2);
-    wrap.style.filter = `hue-rotate(${deg.toFixed(1)}deg)`;
+    wrap.style.filter = `hue-rotate(${deg.toFixed(2)}deg)`;
   } else if (colorBreathT0 !== null) {
     colorBreathT0 = null; wrap.style.filter = '';
   }
+
+  // ── Background colour shift (transition suppressed for smooth animation) ───
   if (S.bgColorBreath) {
     const now = performance.now();
-    if (!bgColorBreathT0) bgColorBreathT0 = now;
+    if (!bgColorBreathT0) {
+      bgColorBreathT0 = now;
+      body.style.transition = 'color 0.5s'; // strip background from transition
+    }
     const deg = S.colorBreathRange * Math.sin((now - bgColorBreathT0) / (S.colorBreathSpeed * 1000) * Math.PI * 2);
     const [bh, bs, bl] = hexToHsl(S.bg);
-    const shifted = `hsl(${((bh + deg) % 360 + 360) % 360},${bs.toFixed(1)}%,${bl.toFixed(1)}%)`;
-    body.style.setProperty('--bg', shifted);
+    const h2 = ((bh + deg) % 360 + 360) % 360;
+    body.style.setProperty('--bg', `hsl(${h2.toFixed(3)},${bs.toFixed(2)}%,${bl.toFixed(2)}%)`);
   } else if (bgColorBreathT0 !== null) {
     bgColorBreathT0 = null;
+    body.style.transition = ''; // restore
     body.style.setProperty('--bg', S.bg);
   }
+
+  // ── Text motion ────────────────────────────────────────────────────────────
+  if (S.textMotion && S.textMotion !== 'none') {
+    const now = performance.now();
+    if (!textMotionT0) textMotionT0 = now;
+    const t = (now - textMotionT0) / (S.textMotionSpeed * 1000) * Math.PI * 2;
+    const a = S.textMotionAmt;
+    if (S.textMotion === 'float') {
+      editor.style.transform = `translateY(${(Math.sin(t) * a).toFixed(2)}px)`;
+    } else if (S.textMotion === 'drift') {
+      const x = (Math.sin(t) * a).toFixed(2);
+      const y = (Math.cos(t * 0.618) * a * 0.6).toFixed(2);
+      editor.style.transform = `translate(${x}px,${y}px)`;
+    }
+  } else if (textMotionT0 !== null) {
+    textMotionT0 = null; editor.style.transform = '';
+  }
+
   requestAnimationFrame(scrollLoop);
 })();
 
@@ -707,6 +806,7 @@ function syncSettingsUI() {
   }
   function co(id, key) { const e = document.getElementById(id); if (e) e.value = S[key]; }
   function tg(id, key) { const e = document.getElementById(id); if (e) e.checked = S[key]; }
+  function se(id, key) { const e = document.getElementById(id); if (e) e.value = S[key] || ''; }
 
   co('sp-bg', 'bg'); co('sp-text', 'text');
   sl('sp-density',  'density',      v => Math.round(v * 100) + '%');
@@ -723,10 +823,14 @@ function syncSettingsUI() {
   sl('sp-halation', 'halation',     v => v.toFixed(2));
   co('sp-halcolor', 'halationColor');
   tg('sp-breathe',  'breathe');
+  se('sp-breathe-mode', 'breatheMode');
   sl('sp-bspeed',   'breatheSpeed', v => v.toFixed(1) + 's');
   sl('sp-bdepth',   'breatheDepth', v => Math.round(v * 100) + '%');
   tg('sp-vignette', 'vignette');
   sl('sp-vigstr',   'vignetteStr',  v => Math.round(v * 100) + '%');
+  se('sp-motion-type',  'textMotion');
+  sl('sp-motion-amt',   'textMotionAmt',   v => v.toFixed(1) + 'px');
+  sl('sp-motion-speed', 'textMotionSpeed', v => v.toFixed(1) + 's');
   tg('sp-cbreathe', 'colorBreath');
   tg('sp-cbg',      'bgColorBreath');
   sl('sp-cbspeed',  'colorBreathSpeed', v => v.toFixed(1) + 's');
@@ -754,6 +858,10 @@ function initSettingsUI() {
     const e = document.getElementById(id);
     if (e) e.addEventListener('change', () => { S[key] = e.checked; applySettings(); });
   }
+  function se(id, key) {
+    const e = document.getElementById(id);
+    if (e) e.addEventListener('change', () => { S[key] = e.value; applySettings(); });
+  }
 
   co('sp-bg', 'bg'); co('sp-text', 'text');
   sl('sp-density',  'density',      v => Math.round(v * 100) + '%');
@@ -770,10 +878,14 @@ function initSettingsUI() {
   sl('sp-halation', 'halation',     v => v.toFixed(2));
   co('sp-halcolor', 'halationColor');
   tg('sp-breathe',  'breathe');
+  se('sp-breathe-mode', 'breatheMode');
   sl('sp-bspeed',   'breatheSpeed', v => v.toFixed(1) + 's');
   sl('sp-bdepth',   'breatheDepth', v => Math.round(v * 100) + '%');
   tg('sp-vignette', 'vignette');
   sl('sp-vigstr',   'vignetteStr',  v => Math.round(v * 100) + '%');
+  se('sp-motion-type',  'textMotion');
+  sl('sp-motion-amt',   'textMotionAmt',   v => v.toFixed(1) + 'px');
+  sl('sp-motion-speed', 'textMotionSpeed', v => v.toFixed(1) + 's');
   tg('sp-cbreathe', 'colorBreath');
   tg('sp-cbg',      'bgColorBreath');
   sl('sp-cbspeed',  'colorBreathSpeed', v => v.toFixed(1) + 's');
