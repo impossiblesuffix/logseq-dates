@@ -778,9 +778,9 @@ let textMotionT0     = null;
 })();
 
 // onlyIfOffscreen: don't spring when cursor is already comfortably visible
-function scrollToY(viewportY, onlyIfOffscreen = false) {
+function scrollToY(viewportY, lazy = false) {
   const h = window.innerHeight;
-  if (onlyIfOffscreen && viewportY > 60 && viewportY < h - 60) return;
+  if (lazy && viewportY >= h * 0.14 && viewportY <= h * 0.72) return;
   const diff = viewportY - h * 0.46;
   if (Math.abs(diff) < 3) return;
   scrollTarget = window.scrollY + diff;
@@ -1029,7 +1029,7 @@ function insertChar(ch) {
     const r   = span.getBoundingClientRect();
     const mid = r.top + r.height / 2;
     cursorDocY = mid + window.scrollY;
-    scrollToY(mid); updateFadeMask();
+    scrollToY(mid, true); updateFadeMask();
   });
   saveContent(); updateWC(); updateTitle();
 }
@@ -1059,7 +1059,7 @@ function insertNewline() {
     rr.collapse(true); sel.removeAllRanges(); sel.addRange(rr);
     const mid = rect.top + rect.height / 2;
     cursorDocY = mid + window.scrollY;
-    scrollToY(mid); updateFadeMask();
+    scrollToY(mid, true); updateFadeMask();
   });
   saveContent(); updateWC();
 }
@@ -1073,23 +1073,6 @@ editor.addEventListener('beforeinput', e => {
 });
 editor.addEventListener('input', () => { saveContent(); updateWC(); updateTitle(); });
 
-// Update cursor position when selection changes (e.g. mouse click on earlier text)
-// Uses onlyIfOffscreen so clicking visible text doesn't spring the view unnecessarily
-let _selRaf = null;
-document.addEventListener('selectionchange', () => {
-  if (document.activeElement !== editor) return;
-  if (_selRaf) return;
-  _selRaf = requestAnimationFrame(() => {
-    _selRaf = null;
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return;
-    const rect = sel.getRangeAt(0).getBoundingClientRect();
-    if (!rect.height) return;
-    const mid = rect.top + rect.height / 2;
-    cursorDocY = mid + window.scrollY;
-    scrollToY(mid, true);
-  });
-});
 
 // ── Markdown preview ───────────────────────────────────────────────────────
 let isPrev = false;
