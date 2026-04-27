@@ -970,22 +970,22 @@ document.addEventListener('keydown', e => {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 (function init() {
-  let loaded = false;
+  // Always start from defaults so new keys introduced in updates are never undefined
+  const wasDark = localStorage.getItem('zen-dark') !== '0';
+  Object.assign(S, wasDark ? DEFAULTS.dark : DEFAULTS.light);
+
   try {
     const raw = localStorage.getItem('zen-settings');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.bg === 'string' && typeof parsed.density === 'number') {
         Object.assign(S, parsed);
-        loaded = true;
+        // Re-fill any keys added after this save (e.g. colorBreath from older saves)
+        const base = getLum(S.bg) < 0.18 ? DEFAULTS.dark : DEFAULTS.light;
+        Object.keys(base).forEach(k => { if (!(k in S)) S[k] = base[k]; });
       }
     }
   } catch(e) {}
-
-  if (!loaded) {
-    const wasDark = localStorage.getItem('zen-dark') !== '0';
-    Object.assign(S, wasDark ? DEFAULTS.dark : DEFAULTS.light);
-  }
 
   applySettings();
   initSettingsUI();
