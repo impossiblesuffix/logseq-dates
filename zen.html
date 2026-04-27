@@ -137,7 +137,7 @@
     /* ── Settings panel ────────────────────────────────────────────────────── */
     #settings-panel {
       position: fixed; top: 0; right: 0;
-      width: 252px; height: 100vh;
+      width: 280px; height: 100vh;
       background: rgba(8,7,14,0.96);
       backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
       border-left: 1px solid rgba(255,255,255,0.055);
@@ -259,6 +259,23 @@
       background: rgba(255,255,255,0.1);
       color: rgba(255,255,255,0.9);
     }
+    .sp-del {
+      width: 22px; height: 22px; border: none; border-radius: 5px;
+      background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.35);
+      cursor: pointer; font-size: 15px; line-height: 1; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sp-del:hover { background: rgba(255,80,80,0.22); color: rgba(255,160,160,0.9); }
+    .sp-save-btn {
+      width: 100%; padding: 6px 0; border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 6px; background: transparent;
+      color: rgba(255,255,255,0.4);
+      font-family: 'Quicksand', sans-serif; font-size: 10.5px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.04em;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .sp-save-btn:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.05); }
   </style>
 </head>
 <body>
@@ -339,6 +356,19 @@
       <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-vignette"><span class="sp-tk"></span></label></div>
       <div class="sp-row"><span class="sp-lbl">Strength</span><input type="range" id="sp-vigstr" class="sp-slider" min="0" max="1" step="0.05"><span class="sp-val" id="sp-vigstr-v"></span></div>
     </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Colour Shift</div>
+      <div class="sp-row"><span class="sp-lbl">Enable</span><label class="sp-toggle"><input type="checkbox" id="sp-cbreathe"><span class="sp-tk"></span></label></div>
+      <div class="sp-row"><span class="sp-lbl">Speed</span><input type="range" id="sp-cbspeed" class="sp-slider" min="2" max="40" step="0.5"><span class="sp-val" id="sp-cbspeed-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Range</span><input type="range" id="sp-cbrange" class="sp-slider" min="1" max="60" step="1"><span class="sp-val" id="sp-cbrange-v"></span></div>
+    </div>
+
+    <div class="sp-sec">
+      <div class="sp-stitle">Custom Themes</div>
+      <div id="sp-custom-themes" style="margin-bottom:9px;"></div>
+      <button class="sp-save-btn" id="sp-save-theme">+ Save current as theme</button>
+    </div>
   </div>
 
 <script>
@@ -361,6 +391,7 @@ const DEFAULTS = {
     haloRadius:24, halation:0, halationColor:'#ff8040',
     breathe:false, breatheSpeed:4, breatheDepth:0.10,
     vignette:false, vignetteStr:0.5,
+    colorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
   },
   light: {
     bg:'#e8e2d6', text:'#1a1208',
@@ -369,6 +400,7 @@ const DEFAULTS = {
     haloRadius:18, halation:0, halationColor:'#c87830',
     breathe:false, breatheSpeed:4, breatheDepth:0.08,
     vignette:false, vignetteStr:0.4,
+    colorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
   },
 };
 
@@ -381,6 +413,7 @@ const PRESETS = {
     haloRadius:40, halation:0.42, halationColor:'#ff4400',
     breathe:true, breatheSpeed:5, breatheDepth:0.10,
     vignette:true, vignetteStr:0.58,
+    colorBreath:false, colorBreathSpeed:10, colorBreathRange:8,
   },
   parchment: { ...DEFAULTS.light },
   vapor: {
@@ -390,6 +423,7 @@ const PRESETS = {
     haloRadius:34, halation:0.44, halationColor:'#9040ff',
     breathe:true, breatheSpeed:6, breatheDepth:0.13,
     vignette:true, vignetteStr:0.62,
+    colorBreath:true, colorBreathSpeed:14, colorBreathRange:22,
   },
   forest: {
     bg:'#060e08', text:'#b8e8a8',
@@ -398,6 +432,7 @@ const PRESETS = {
     haloRadius:26, halation:0.18, halationColor:'#40ff60',
     breathe:false, breatheSpeed:4, breatheDepth:0.10,
     vignette:false, vignetteStr:0.5,
+    colorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
   },
 };
 
@@ -435,6 +470,39 @@ function computeTextShadow() {
 
 function saveSettings() {
   try { localStorage.setItem('zen-settings', JSON.stringify(S)); } catch(e) {}
+}
+
+// ── Custom themes ──────────────────────────────────────────────────────────
+const CUSTOM_KEY = 'zen-custom-themes';
+function loadCustomThemes() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || '{}'); } catch(e) { return {}; }
+}
+function saveCustomThemes(t) {
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(t)); } catch(e) {}
+}
+function renderCustomThemes() {
+  const ct = document.getElementById('sp-custom-themes');
+  if (!ct) return;
+  const themes = loadCustomThemes();
+  const names  = Object.keys(themes);
+  ct.innerHTML = '';
+  if (!names.length) {
+    ct.innerHTML = '<span style="font-size:9.5px;color:rgba(255,255,255,0.22);letter-spacing:0.02em;">No saved themes yet</span>';
+    return;
+  }
+  names.forEach(name => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:5px;margin-bottom:5px;';
+    const btn = document.createElement('button');
+    btn.className = 'sp-preset'; btn.style.flex = '1'; btn.textContent = name;
+    btn.addEventListener('click', () => { Object.assign(S, themes[name]); applySettings(); });
+    const del = document.createElement('button');
+    del.className = 'sp-del'; del.textContent = '×'; del.title = 'Delete';
+    del.addEventListener('click', () => {
+      const t2 = loadCustomThemes(); delete t2[name]; saveCustomThemes(t2); renderCustomThemes();
+    });
+    row.appendChild(btn); row.appendChild(del); ct.appendChild(row);
+  });
 }
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -514,8 +582,9 @@ window.addEventListener('wheel',     e => e.preventDefault(), { passive: false }
 window.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
 // ── Scroll spring + breathing ──────────────────────────────────────────────
-let scrollTarget = null;
-let breatheT0    = null;
+let scrollTarget   = null;
+let breatheT0      = null;
+let colorBreathT0  = null;
 
 (function scrollLoop() {
   if (scrollTarget !== null) {
@@ -535,11 +604,22 @@ let breatheT0    = null;
   } else if (breatheT0 !== null) {
     breatheT0 = null; wrap.style.opacity = '';
   }
+  if (S.colorBreath) {
+    const now = performance.now();
+    if (!colorBreathT0) colorBreathT0 = now;
+    const deg = S.colorBreathRange * Math.sin((now - colorBreathT0) / (S.colorBreathSpeed * 1000) * Math.PI * 2);
+    wrap.style.filter = `hue-rotate(${deg.toFixed(1)}deg)`;
+  } else if (colorBreathT0 !== null) {
+    colorBreathT0 = null; wrap.style.filter = '';
+  }
   requestAnimationFrame(scrollLoop);
 })();
 
-function scrollToY(viewportY) {
-  const diff = viewportY - window.innerHeight * 0.46;
+// onlyIfOffscreen: don't spring when cursor is already comfortably visible
+function scrollToY(viewportY, onlyIfOffscreen = false) {
+  const h = window.innerHeight;
+  if (onlyIfOffscreen && viewportY > 60 && viewportY < h - 60) return;
+  const diff = viewportY - h * 0.46;
   if (Math.abs(diff) < 3) return;
   scrollTarget = window.scrollY + diff;
 }
@@ -614,6 +694,9 @@ function syncSettingsUI() {
   sl('sp-bdepth',   'breatheDepth', v => Math.round(v * 100) + '%');
   tg('sp-vignette', 'vignette');
   sl('sp-vigstr',   'vignetteStr',  v => Math.round(v * 100) + '%');
+  tg('sp-cbreathe', 'colorBreath');
+  sl('sp-cbspeed',  'colorBreathSpeed', v => v.toFixed(1) + 's');
+  sl('sp-cbrange',  'colorBreathRange', v => Math.round(v) + '°');
 }
 
 function initSettingsUI() {
@@ -657,17 +740,31 @@ function initSettingsUI() {
   sl('sp-bdepth',   'breatheDepth', v => Math.round(v * 100) + '%');
   tg('sp-vignette', 'vignette');
   sl('sp-vigstr',   'vignetteStr',  v => Math.round(v * 100) + '%');
+  tg('sp-cbreathe', 'colorBreath');
+  sl('sp-cbspeed',  'colorBreathSpeed', v => v.toFixed(1) + 's');
+  sl('sp-cbrange',  'colorBreathRange', v => Math.round(v) + '°');
 
-  document.querySelectorAll('.sp-preset').forEach(btn => {
+  document.querySelectorAll('.sp-preset[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const p = PRESETS[btn.dataset.preset];
       if (!p) return;
       Object.assign(S, p);
       applySettings();
-      document.querySelectorAll('.sp-preset').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.sp-preset[data-preset]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
+
+  document.getElementById('sp-save-theme').addEventListener('click', () => {
+    const name = prompt('Save theme as:', '');
+    if (!name || !name.trim()) return;
+    const themes = loadCustomThemes();
+    themes[name.trim()] = { ...S };
+    saveCustomThemes(themes);
+    renderCustomThemes();
+    showToast('Theme saved');
+  });
+  renderCustomThemes();
 
   bsettings.addEventListener('click', () => settingsPanel.classList.toggle('open'));
   document.getElementById('sp-close').addEventListener('click', () => settingsPanel.classList.remove('open'));
@@ -776,6 +873,24 @@ editor.addEventListener('beforeinput', e => {
 });
 editor.addEventListener('input', () => { saveContent(); updateWC(); updateTitle(); });
 
+// Update cursor position when selection changes (e.g. mouse click on earlier text)
+// Uses onlyIfOffscreen so clicking visible text doesn't spring the view unnecessarily
+let _selRaf = null;
+document.addEventListener('selectionchange', () => {
+  if (document.activeElement !== editor) return;
+  if (_selRaf) return;
+  _selRaf = requestAnimationFrame(() => {
+    _selRaf = null;
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    if (!rect.height) return;
+    const mid = rect.top + rect.height / 2;
+    cursorDocY = mid + window.scrollY;
+    scrollToY(mid, true);
+  });
+});
+
 // ── Markdown preview ───────────────────────────────────────────────────────
 let isPrev = false;
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -843,6 +958,14 @@ document.addEventListener('keydown', e => {
   if (mod && e.key==='s') { e.preventDefault(); save(); }
   if (mod && e.key==='p') { e.preventDefault(); togglePreview(); }
   if (e.key==='Escape')   { settingsPanel.classList.remove('open'); }
+  if (e.key === 'PageUp') {
+    e.preventDefault();
+    scrollTarget = Math.max(0, (scrollTarget ?? window.scrollY) - window.innerHeight * 0.85);
+  }
+  if (e.key === 'PageDown') {
+    e.preventDefault();
+    scrollTarget = (scrollTarget ?? window.scrollY) + window.innerHeight * 0.85;
+  }
 });
 
 // ── Init ───────────────────────────────────────────────────────────────────
