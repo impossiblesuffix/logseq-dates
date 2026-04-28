@@ -326,6 +326,7 @@
   <div id="ctrl">
     <button class="btn" id="bfull"     aria-label="Fullscreen"></button>
     <button class="btn" id="bfade"     aria-label="Toggle fade"></button>
+    <button class="btn" id="bedit"     aria-label="Edit mode"></button>
     <button class="btn" id="bprev"     aria-label="Preview"></button>
     <button class="btn" id="bsave"     aria-label="Save"></button>
     <button class="btn" id="bsettings" aria-label="Settings"></button>
@@ -458,6 +459,8 @@ const ICO = {
   exitfull: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,1 1,1 1,4"/><polyline points="11,1 14,1 14,4"/><polyline points="14,11 14,14 11,14"/><polyline points="1,11 1,14 4,14"/><rect x="4" y="4" width="7" height="7" rx="0.5"/></svg>`,
   fadeon:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="13" y2="3" stroke-opacity="0.25"/><line x1="2" y1="6" x2="13" y2="6" stroke-opacity="0.55"/><line x1="2" y1="9" x2="13" y2="9" stroke-opacity="0.8"/><line x1="2" y1="12" x2="13" y2="12"/></svg>`,
   fadeoff:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="13" y2="3"/><line x1="2" y1="6" x2="13" y2="6"/><line x1="2" y1="9" x2="13" y2="9"/><line x1="2" y1="12" x2="13" y2="12"/><line x1="1" y1="1" x2="14" y2="14" stroke-width="1.2" stroke-opacity="0.5"/></svg>`,
+  writemode:`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="8" height="6.5" rx="1.3"/><path d="M5.5 7V5a2 2 0 0 1 4 0v2"/><circle cx="7.5" cy="10.5" r="0.9" fill="currentColor" stroke="none"/></svg>`,
+  editmode: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="8" height="6.5" rx="1.3"/><path d="M5.5 7V5a2 2 0 0 1 4 0"/><circle cx="7.5" cy="10.5" r="0.9" fill="currentColor" stroke="none"/></svg>`,
 };
 
 // ── Settings defaults & presets ────────────────────────────────────────────
@@ -625,6 +628,7 @@ function renderCustomThemes() {
 const body        = document.body;
 const bfull       = document.getElementById('bfull');
 const bfade       = document.getElementById('bfade');
+const bedit       = document.getElementById('bedit');
 const bprev       = document.getElementById('bprev');
 const bsave       = document.getElementById('bsave');
 const bsettings   = document.getElementById('bsettings');
@@ -643,6 +647,7 @@ bfull.innerHTML     = ICO.fullscr;
 bprev.innerHTML     = ICO.eye;
 bsave.innerHTML     = ICO.save;
 bsettings.innerHTML = ICO.settings;
+updateEditBtn();
 
 function updateFullIcon() {
   bfull.innerHTML = document.fullscreenElement ? ICO.exitfull : ICO.fullscr;
@@ -663,6 +668,13 @@ bfade.addEventListener('click', () => {
   updateFadeMask();
   saveSettings();
 });
+
+let editMode = false;
+function updateEditBtn() {
+  bedit.innerHTML = editMode ? ICO.editmode : ICO.writemode;
+  bedit.title = editMode ? 'Edit mode (free scroll)' : 'Write mode (cursor centred)';
+}
+bedit.addEventListener('click', () => { editMode = !editMode; updateEditBtn(); editor.focus(); });
 
 // ── Noise ──────────────────────────────────────────────────────────────────
 let nW, nH, noiseTimer;
@@ -704,8 +716,28 @@ function restartNoiseTimer() {
 window.addEventListener('resize', () => { resizeNoise(); restartNoiseTimer(); });
 
 // ── Recency fade (viewport-fixed mask) ────────────────────────────────────
-let cursorDocY = null;
-let waveVP     = null; // viewport-Y of wave band centre, null when inactive
+let cursorDocY      = null;
+let paragraphTopDocY = null;
+let waveVP          = null; // viewport-Y of wave band centre, null when inactive
+
+function getParagraphTopViewY() {
+  // Returns viewport-Y of the start of the current paragraph, or falls back to cursorViewY.
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return null;
+  try {
+    const range  = sel.getRangeAt(0);
+    const node   = range.startContainer;
+    const offset = range.startOffset;
+    if (node.nodeType !== Node.TEXT_NODE) return null;
+    const text  = node.textContent;
+    const nlPos = text.lastIndexOf('\n', Math.max(0, offset - 1));
+    const r2    = document.createRange();
+    r2.setStart(node, nlPos >= 0 ? nlPos + 1 : 0);
+    r2.collapse(true);
+    const pr = r2.getBoundingClientRect();
+    return (pr.top !== 0 || pr.left !== 0) ? pr.top : null;
+  } catch(e) { return null; }
+}
 
 function updateFadeMask() {
   if (!S.fade) {
@@ -713,20 +745,21 @@ function updateFadeMask() {
   }
   if (cursorDocY === null) return;
   const vy  = Math.max(1, cursorDocY - window.scrollY);
+  // Paragraph top: keep current paragraph fully visible
+  const rawPY = paragraphTopDocY !== null ? paragraphTopDocY - window.scrollY : vy;
+  const py  = Math.min(Math.max(1, rawPY), vy);
   const pos = `0 ${window.scrollY}px`;
   let g;
 
   if (waveVP !== null) {
-    // Wave directly modulates the mask — the text itself becomes transparent as the band passes.
-    // Build a 5-stop gradient that has a dip at waveVP within the opaque region.
-    const hb = Math.round(window.innerHeight * 0.13); // half-band (13% vh)
+    const hb = Math.round(window.innerHeight * 0.13);
     const wc = Math.round(waveVP);
     const w0 = Math.max(0, wc - hb);
-    const w1 = Math.min(Math.round(vy), wc + hb);
-    const da = (1 - S.breatheDepth).toFixed(3); // opacity floor at band centre
-    g = `linear-gradient(to bottom,rgba(0,0,0,0.06) 0px,black ${w0}px,rgba(0,0,0,${da}) ${wc}px,black ${w1}px,black ${Math.round(vy)}px)`;
+    const w1 = Math.min(Math.round(py), wc + hb);
+    const da = (1 - S.breatheDepth).toFixed(3);
+    g = `linear-gradient(to bottom,rgba(0,0,0,0.06) 0px,black ${w0}px,rgba(0,0,0,${da}) ${wc}px,black ${w1}px,black ${Math.round(py)}px,black ${Math.round(vy)}px)`;
   } else {
-    g = `linear-gradient(to bottom,rgba(0,0,0,0.06) 0px,black ${Math.round(vy)}px)`;
+    g = `linear-gradient(to bottom,rgba(0,0,0,0.06) 0px,black ${Math.round(py)}px,black ${Math.round(vy)}px)`;
   }
 
   wrap.style.webkitMaskImage = g;
@@ -1074,6 +1107,7 @@ if (stored) {
     if (rects.length) {
       const mid = rects[0].top + rects[0].height / 2;
       cursorDocY = mid + window.scrollY;
+      paragraphTopDocY = cursorDocY;
       scrollToY(mid); updateFadeMask();
     }
   });
@@ -1104,7 +1138,13 @@ editor.addEventListener('input', () => {
     if (!sel || !sel.rangeCount) return;
     const rect = sel.getRangeAt(0).getBoundingClientRect();
     const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
-    if (viewY > 0) { cursorDocY = viewY + window.scrollY; scrollToY(viewY); updateFadeMask(); }
+    if (viewY > 0) {
+      cursorDocY = viewY + window.scrollY;
+      const pvy = getParagraphTopViewY();
+      paragraphTopDocY = pvy !== null ? pvy + window.scrollY : cursorDocY;
+      if (!editMode) scrollToY(viewY);
+      updateFadeMask();
+    }
   });
 });
 editor.addEventListener('pointerup', () => {
@@ -1113,7 +1153,12 @@ editor.addEventListener('pointerup', () => {
     if (!sel || !sel.rangeCount) return;
     const rect = sel.getRangeAt(0).getBoundingClientRect();
     const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
-    if (viewY > 0) { cursorDocY = viewY + window.scrollY; updateFadeMask(); }
+    if (viewY > 0) {
+      cursorDocY = viewY + window.scrollY;
+      const pvy = getParagraphTopViewY();
+      paragraphTopDocY = pvy !== null ? pvy + window.scrollY : cursorDocY;
+      updateFadeMask();
+    }
   });
 });
 
