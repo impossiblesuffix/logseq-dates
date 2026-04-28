@@ -142,7 +142,7 @@
       backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
       border-left: 1px solid rgba(255,255,255,0.055);
       z-index: 30; overflow-y: auto; overflow-x: hidden;
-      padding: 14px 16px 0;
+      padding: 14px 16px 80px;
       font-family: 'Quicksand', sans-serif;
       transform: translateX(100%);
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -314,11 +314,12 @@
   <div id="wave-overlay"></div>
 
   <div id="wrap">
-    <div id="editor" contenteditable="true" data-ph="Begin writing…" spellcheck="true"></div>
+    <div id="editor" contenteditable="plaintext-only" data-ph="Begin writing…" spellcheck="true"></div>
     <div id="preview"></div>
   </div>
 
   <div id="ctrl">
+    <button class="btn" id="bfull"     aria-label="Fullscreen"></button>
     <button class="btn" id="btheme"    aria-label="Toggle theme"></button>
     <button class="btn" id="bprev"     aria-label="Preview"></button>
     <button class="btn" id="bsave"     aria-label="Save"></button>
@@ -445,6 +446,8 @@ const ICO = {
   pen:      `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5l3 3-8 8H2.5v-3z"/></svg>`,
   save:     `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7.5" y1="2" x2="7.5" y2="10.5"/><polyline points="4.2,7.2 7.5,10.5 10.8,7.2"/><line x1="1.5" y1="13.5" x2="13.5" y2="13.5"/></svg>`,
   settings: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="1" y1="3.5" x2="14" y2="3.5"/><line x1="1" y1="7.5" x2="14" y2="7.5"/><line x1="1" y1="11.5" x2="14" y2="11.5"/><circle cx="4.5" cy="3.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="6" cy="11.5" r="1.7" fill="currentColor" stroke="none"/></svg>`,
+  fullscr:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,5 1,1 5,1"/><polyline points="10,1 14,1 14,5"/><polyline points="14,10 14,14 10,14"/><polyline points="5,14 1,14 1,10"/></svg>`,
+  exitfull: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,1 1,1 1,4"/><polyline points="11,1 14,1 14,4"/><polyline points="14,11 14,14 11,14"/><polyline points="1,11 1,14 4,14"/><rect x="4" y="4" width="7" height="7" rx="0.5"/></svg>`,
 };
 
 // ── Settings defaults & presets ────────────────────────────────────────────
@@ -605,6 +608,7 @@ function renderCustomThemes() {
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const body        = document.body;
+const bfull       = document.getElementById('bfull');
 const btheme      = document.getElementById('btheme');
 const bprev       = document.getElementById('bprev');
 const bsave       = document.getElementById('bsave');
@@ -620,9 +624,19 @@ const settingsPanel = document.getElementById('settings-panel');
 const noiseCanvas = document.getElementById('noise-canvas');
 const nCtx        = noiseCanvas.getContext('2d');
 
+bfull.innerHTML     = ICO.fullscr;
 bprev.innerHTML     = ICO.eye;
 bsave.innerHTML     = ICO.save;
 bsettings.innerHTML = ICO.settings;
+
+function updateFullIcon() {
+  bfull.innerHTML = document.fullscreenElement ? ICO.exitfull : ICO.fullscr;
+}
+bfull.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+document.addEventListener('fullscreenchange', updateFullIcon);
 
 // ── Noise ──────────────────────────────────────────────────────────────────
 let nW, nH, noiseTimer;
@@ -1050,33 +1064,7 @@ function updateWC() {
   wcTimer = setTimeout(() => wcEl.classList.remove('on'), 2400);
 }
 
-// ── Character insertion ────────────────────────────────────────────────────
-function insertNewline() {
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount) return;
-  const range = sel.getRangeAt(0);
-  range.deleteContents();
-  const nl = document.createTextNode('\n');
-  range.insertNode(nl);
-  if (!nl.nextSibling) editor.appendChild(document.createTextNode('\n'));
-  const nr = document.createRange();
-  nr.setStartAfter(nl); nr.collapse(true);
-  sel.removeAllRanges(); sel.addRange(nr);
-  saveContent(); updateWC();
-  requestAnimationFrame(() => {
-    const s = window.getSelection();
-    if (!s || !s.rangeCount) return;
-    const rect = s.getRangeAt(0).getBoundingClientRect();
-    const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
-    if (viewY > 0) { cursorDocY = viewY + window.scrollY; scrollToY(viewY, true); updateFadeMask(); }
-  });
-}
-
-editor.addEventListener('beforeinput', e => {
-  if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
-    e.preventDefault(); insertNewline();
-  }
-});
+// ── Input tracking ────────────────────────────────────────────────────────
 editor.addEventListener('input', () => {
   saveContent(); updateWC(); updateTitle();
   requestAnimationFrame(() => {
@@ -1164,6 +1152,11 @@ document.addEventListener('keydown', e => {
   const mod = e.metaKey || e.ctrlKey;
   if (mod && e.key==='s') { e.preventDefault(); save(); }
   if (mod && e.key==='p') { e.preventDefault(); togglePreview(); }
+  if (e.key==='F11' || (mod && e.shiftKey && e.key==='f')) {
+    e.preventDefault();
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
   if (e.key==='Escape')   { settingsPanel.classList.remove('open'); }
   if (e.key === 'PageUp') {
     e.preventDefault();
