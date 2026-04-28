@@ -52,8 +52,8 @@
     }
 
     #editor {
-      width: 100%; max-width: 660px;
-      min-height: 100vh; padding: 46vh 32px 50vh;
+      width: 100%; max-width: var(--page-width, 660px);
+      min-height: 100vh; padding: 46vh var(--page-margin, 32px) 50vh;
       font-family: 'Quicksand', sans-serif; font-weight: 500;
       font-size: 18px; line-height: 1.9; letter-spacing: 0.015em;
       color: var(--text); caret-color: var(--text); outline: none;
@@ -779,6 +779,7 @@ let bgColorBreathT0  = null;
 let textMotionT0     = null;
 
 (function scrollLoop() {
+  try {
   if (scrollTarget !== null) {
     const dist = scrollTarget - window.scrollY;
     if (Math.abs(dist) < 0.8) {
@@ -874,7 +875,7 @@ let textMotionT0     = null;
   } else if (textMotionT0 !== null) {
     textMotionT0 = null; editor.style.transform = '';
   }
-
+  } catch(e) {}
   requestAnimationFrame(scrollLoop);
 })();
 
@@ -913,14 +914,16 @@ function applySettings() {
   body.style.setProperty('--code-bg',   isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)');
 
   // Typography + page geometry
+  editor.style.setProperty('--page-width',  S.pageWidth  + 'px');
+  editor.style.setProperty('--page-margin', S.pageMargin + 'px');
   [editor, preview].forEach(el => {
     el.style.fontSize      = S.fontSize + 'px';
     el.style.lineHeight    = S.lineHeight;
     el.style.letterSpacing = S.letterSpacing + 'em';
-    el.style.maxWidth      = S.pageWidth + 'px';
-    el.style.paddingLeft   = S.pageMargin + 'px';
-    el.style.paddingRight  = S.pageMargin + 'px';
   });
+  preview.style.maxWidth     = S.pageWidth  + 'px';
+  preview.style.paddingLeft  = S.pageMargin + 'px';
+  preview.style.paddingRight = S.pageMargin + 'px';
 
   // Blur — softness on the rendered text+glow layer; typing animation blur
   const bf = S.textBlur > 0 ? `blur(${S.textBlur}px)` : '';
@@ -1097,20 +1100,6 @@ function initSettingsUI() {
 const stored = localStorage.getItem('zen-content');
 if (stored) {
   editor.textContent = stored.endsWith('\n') ? stored : stored + '\n';
-  const sel = window.getSelection(), r = document.createRange();
-  r.selectNodeContents(editor); r.collapse(false);
-  sel.removeAllRanges(); sel.addRange(r);
-  requestAnimationFrame(() => {
-    const s = window.getSelection();
-    if (!s || !s.rangeCount) return;
-    const rects = s.getRangeAt(0).getClientRects();
-    if (rects.length) {
-      const mid = rects[0].top + rects[0].height / 2;
-      cursorDocY = mid + window.scrollY;
-      paragraphTopDocY = cursorDocY;
-      scrollToY(mid); updateFadeMask();
-    }
-  });
 }
 
 function getContent() { return editor.textContent.replace(/\n+$/, ''); }
@@ -1267,6 +1256,26 @@ document.addEventListener('keydown', e => {
   applySettings();
   initSettingsUI();
   editor.focus();
+
+  // Set cursor to end of stored content and spring-scroll to it.
+  // Must run AFTER editor.focus() to prevent focus() from resetting the selection.
+  if (stored) {
+    const sel = window.getSelection(), r = document.createRange();
+    r.selectNodeContents(editor); r.collapse(false);
+    sel.removeAllRanges(); sel.addRange(r);
+    requestAnimationFrame(() => {
+      const s = window.getSelection();
+      if (!s || !s.rangeCount) return;
+      const rect = s.getRangeAt(0).getBoundingClientRect();
+      const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
+      if (viewY > 0) {
+        cursorDocY = viewY + window.scrollY;
+        paragraphTopDocY = cursorDocY;
+        scrollToY(viewY);
+        updateFadeMask();
+      }
+    });
+  }
 })();
 </script>
 </body>
