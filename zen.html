@@ -1104,7 +1104,7 @@ editor.addEventListener('input', () => {
     if (!sel || !sel.rangeCount) return;
     const rect = sel.getRangeAt(0).getBoundingClientRect();
     const viewY = rect.height ? rect.top + rect.height / 2 : rect.top;
-    if (viewY > 0) { cursorDocY = viewY + window.scrollY; scrollToY(viewY, true); updateFadeMask(); }
+    if (viewY > 0) { cursorDocY = viewY + window.scrollY; scrollToY(viewY); updateFadeMask(); }
   });
 });
 editor.addEventListener('pointerup', () => {
