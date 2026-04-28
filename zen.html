@@ -141,14 +141,19 @@
       background: rgba(8,7,14,0.96);
       backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
       border-left: 1px solid rgba(255,255,255,0.055);
-      z-index: 30; overflow-y: auto; overflow-x: hidden;
+      z-index: 30; overflow-y: scroll; overflow-x: hidden;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       padding: 14px 16px 80px;
       font-family: 'Quicksand', sans-serif;
       transform: translateX(100%);
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      scrollbar-width: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.12) transparent;
     }
-    #settings-panel::-webkit-scrollbar { display: none; }
+    #settings-panel::-webkit-scrollbar { width: 3px; }
+    #settings-panel::-webkit-scrollbar-track { background: transparent; }
+    #settings-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
     #settings-panel.open { transform: translateX(0); }
     .sp-bottom-fade {
       position: sticky; bottom: 0;
@@ -369,6 +374,9 @@
       <div class="sp-row"><span class="sp-lbl">Spacing</span><input type="range" id="sp-ls" class="sp-slider" min="-0.02" max="0.12" step="0.005"><span class="sp-val" id="sp-ls-v"></span></div>
       <div class="sp-row"><span class="sp-lbl">Type blur</span><input type="range" id="sp-typeblur" class="sp-slider" min="0" max="14" step="0.5"><span class="sp-val" id="sp-typeblur-v"></span></div>
       <div class="sp-row"><span class="sp-lbl">Softness</span><input type="range" id="sp-textblur" class="sp-slider" min="0" max="4" step="0.05"><span class="sp-val" id="sp-textblur-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Width</span><input type="range" id="sp-pagewidth" class="sp-slider" min="320" max="1000" step="10"><span class="sp-val" id="sp-pagewidth-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Margin</span><input type="range" id="sp-pagemargin" class="sp-slider" min="8" max="80" step="4"><span class="sp-val" id="sp-pagemargin-v"></span></div>
+      <div class="sp-row"><span class="sp-lbl">Recency fade</span><label class="sp-toggle"><input type="checkbox" id="sp-fade"><span class="sp-tk"></span></label></div>
     </div>
 
     <div class="sp-sec">
@@ -462,6 +470,7 @@ const DEFAULTS = {
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
     dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
+    fade:true, pageWidth:660, pageMargin:32,
   },
   light: {
     bg:'#e8e2d6', text:'#1a1208',
@@ -473,6 +482,7 @@ const DEFAULTS = {
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
     dropShadow:false, dropShadowAngle:135, dropShadowDist:2, dropShadowBlur:6, dropShadowColor:'#000000', dropShadowAlpha:0.4,
+    fade:true, pageWidth:660, pageMargin:32,
   },
 };
 
@@ -488,6 +498,7 @@ const PRESETS = {
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:10, colorBreathRange:8,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
     dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
+    fade:true, pageWidth:660, pageMargin:32,
   },
   parchment: { ...DEFAULTS.light },
   vapor: {
@@ -500,6 +511,7 @@ const PRESETS = {
     colorBreath:true, bgColorBreath:true, colorBreathSpeed:14, colorBreathRange:22,
     textMotion:'float', textMotionAmt:3, textMotionSpeed:12,
     dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
+    fade:true, pageWidth:660, pageMargin:32,
   },
   forest: {
     bg:'#060e08', text:'#b8e8a8',
@@ -511,6 +523,7 @@ const PRESETS = {
     colorBreath:false, bgColorBreath:false, colorBreathSpeed:8, colorBreathRange:12,
     textMotion:'none', textMotionAmt:4, textMotionSpeed:8,
     dropShadow:false, dropShadowAngle:135, dropShadowDist:3, dropShadowBlur:8, dropShadowColor:'#000000', dropShadowAlpha:0.6,
+    fade:true, pageWidth:660, pageMargin:32,
   },
 };
 
@@ -682,6 +695,9 @@ let cursorDocY = null;
 let waveVP     = null; // viewport-Y of wave band centre, null when inactive
 
 function updateFadeMask() {
+  if (!S.fade) {
+    wrap.style.webkitMaskImage = ''; wrap.style.maskImage = ''; return;
+  }
   if (cursorDocY === null) return;
   const vy  = Math.max(1, cursorDocY - window.scrollY);
   const pos = `0 ${window.scrollY}px`;
@@ -706,8 +722,8 @@ function updateFadeMask() {
   wrap.style.maskPosition = pos;
 }
 
-window.addEventListener('wheel',     e => e.preventDefault(), { passive: false });
-window.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+window.addEventListener('wheel',     e => { if (!settingsPanel.contains(e.target)) e.preventDefault(); }, { passive: false });
+window.addEventListener('touchmove', e => { if (!settingsPanel.contains(e.target)) e.preventDefault(); }, { passive: false });
 
 // ── Scroll spring + breathing ──────────────────────────────────────────────
 let scrollTarget     = null;
@@ -850,11 +866,14 @@ function applySettings() {
   body.style.setProperty('--btn-hover', isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.14)');
   body.style.setProperty('--code-bg',   isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)');
 
-  // Typography
+  // Typography + page geometry
   [editor, preview].forEach(el => {
     el.style.fontSize      = S.fontSize + 'px';
     el.style.lineHeight    = S.lineHeight;
     el.style.letterSpacing = S.letterSpacing + 'em';
+    el.style.maxWidth      = S.pageWidth + 'px';
+    el.style.paddingLeft   = S.pageMargin + 'px';
+    el.style.paddingRight  = S.pageMargin + 'px';
   });
 
   // Blur — softness on the rendered text+glow layer; typing animation blur
@@ -907,8 +926,11 @@ function syncSettingsUI() {
   sl('sp-fontsize', 'fontSize',     v => v + 'px');
   sl('sp-lh',       'lineHeight',   v => v.toFixed(2));
   sl('sp-ls',       'letterSpacing',v => v.toFixed(3));
-  sl('sp-typeblur', 'typeBlur',     v => v.toFixed(1) + 'px');
-  sl('sp-textblur', 'textBlur',     v => v.toFixed(2) + 'px');
+  sl('sp-typeblur',    'typeBlur',     v => v.toFixed(1) + 'px');
+  sl('sp-textblur',    'textBlur',     v => v.toFixed(2) + 'px');
+  sl('sp-pagewidth',   'pageWidth',    v => Math.round(v) + 'px');
+  sl('sp-pagemargin',  'pageMargin',   v => Math.round(v) + 'px');
+  tg('sp-fade',        'fade');
   sl('sp-halo',     'haloRadius',   v => v + 'px');
   sl('sp-halation', 'halation',     v => v.toFixed(2));
   co('sp-halcolor', 'halationColor');
@@ -970,8 +992,11 @@ function initSettingsUI() {
   sl('sp-fontsize', 'fontSize',     v => v + 'px');
   sl('sp-lh',       'lineHeight',   v => v.toFixed(2));
   sl('sp-ls',       'letterSpacing',v => v.toFixed(3));
-  sl('sp-typeblur', 'typeBlur',     v => v.toFixed(1) + 'px');
-  sl('sp-textblur', 'textBlur',     v => v.toFixed(2) + 'px');
+  sl('sp-typeblur',   'typeBlur',    v => v.toFixed(1) + 'px');
+  sl('sp-textblur',   'textBlur',   v => v.toFixed(2) + 'px');
+  sl('sp-pagewidth',  'pageWidth',  v => Math.round(v) + 'px');
+  sl('sp-pagemargin', 'pageMargin', v => Math.round(v) + 'px');
+  tg('sp-fade',       'fade');
   sl('sp-halo',     'haloRadius',   v => v + 'px');
   sl('sp-halation', 'halation',     v => v.toFixed(2));
   co('sp-halcolor', 'halationColor');
