@@ -674,7 +674,15 @@ function updateEditBtn() {
   bedit.innerHTML = editMode ? ICO.editmode : ICO.writemode;
   bedit.title = editMode ? 'Edit mode (free scroll)' : 'Write mode (cursor centred)';
 }
-bedit.addEventListener('click', () => { editMode = !editMode; updateEditBtn(); editor.focus(); });
+bedit.addEventListener('click', () => {
+  editMode = !editMode;
+  updateEditBtn();
+  editor.focus();
+  if (!editMode && cursorDocY !== null) {
+    // Returning to write mode — spring back to cursor
+    scrollToY(cursorDocY - window.scrollY);
+  }
+});
 
 // ── Noise ──────────────────────────────────────────────────────────────────
 let nW, nH, noiseTimer;
@@ -768,8 +776,8 @@ function updateFadeMask() {
   wrap.style.maskPosition = pos;
 }
 
-window.addEventListener('wheel',     e => { if (!settingsPanel.contains(e.target)) e.preventDefault(); }, { passive: false });
-window.addEventListener('touchmove', e => { if (!settingsPanel.contains(e.target)) e.preventDefault(); }, { passive: false });
+window.addEventListener('wheel',     e => { if (!editMode && !settingsPanel.contains(e.target)) e.preventDefault(); }, { passive: false });
+window.addEventListener('touchmove', e => { if (!editMode && !settingsPanel.contains(e.target)) e.preventDefault(); }, { passive: false });
 
 // ── Scroll spring + breathing ──────────────────────────────────────────────
 let scrollTarget     = null;
