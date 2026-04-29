@@ -13,7 +13,9 @@
 <!-- Theme colour (Android Chrome address bar) -->
 <meta name="theme-color" content="#4f46e5">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -6725,13 +6727,13 @@ document.addEventListener('visibilitychange', async () => {
 });
 
 async function startApp() {
-  await loadFromSupabase();
+  // Show immediately from localStorage — don't wait for the network
+  loadFromStorage();
   $('#auth-screen').style.display = 'none';
   $('#toggle-hide-done').checked = hideCompleted;
   const savedSize = localStorage.getItem('habit-watcher-ui-size');
   const isMobile = window.matchMedia('(hover: none)').matches;
-  const uiSize = savedSize !== null ? savedSize : (isMobile ? 'md' : '');
-  applyUiSize(uiSize);
+  applyUiSize(savedSize !== null ? savedSize : (isMobile ? 'md' : ''));
   if (horizons.length === 0) horizons = initDefaultHorizons();
   populateTimeSelects();
   buildDatePanel();
@@ -6740,7 +6742,9 @@ async function startApp() {
     const h = $('#card-body').clientHeight - 16;
     applyZoom(Math.max(PPM_MIN, h / (tlEnd - tlStart)));
   });
-  // set up real-time sync
+  // Background: sync latest from Supabase, re-render if anything changed
+  loadFromSupabase().then(() => rerender());
+  // Background: set up realtime
   const { data: { session } } = await _sb.auth.getSession();
   if (session) setupRealtime(session.user.id);
 }
@@ -6767,7 +6771,7 @@ $('#btn-signout').addEventListener('click', async () => {
 
 (async () => {
   const { data: { session } } = await _sb.auth.getSession();
-  if (session) { await startApp(); }
+  if (session) { startApp(); }  // no await — renders from localStorage immediately
   else { $('#auth-screen').style.display = 'flex'; }
 })();
 
