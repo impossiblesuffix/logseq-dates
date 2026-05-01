@@ -3100,14 +3100,20 @@ function renderTasks() {
     const isAutoRep = !!(t.repeat && t.repeat.freq !== 'manual');
     return taskMatchesView(t) && !t.isHeader && !(isAutoRep && _vw > _ts);
   });
-  const _total = _viewable.length, _done = _viewable.filter(t => t.done).length;
+  const _total = _viewable.length;
+  const _done = _viewable.filter(t => {
+    const isAutoRep = !!(t.repeat && t.repeat.freq !== 'manual');
+    return isAutoRep ? (t.done && t.doneDate === _vw) : t.done;
+  }).length;
   const sub = $('#header-sub');
   if (sub) sub.textContent = _total > 0 ? `${_done} / ${_total}` : '';
   for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) {
     const task = tasks[taskIdx];
     const isAutoRepeater = !!(task.repeat && task.repeat.freq !== 'manual');
     const isFutureRepeater = isAutoRepeater && _vw > _ts;
-    const effectiveDone = isFutureRepeater ? false : task.done;
+    const effectiveDone = isFutureRepeater ? false
+      : isAutoRepeater ? (task.done && task.doneDate === _vw)
+      : task.done;
     if (hideCompleted && effectiveDone) continue;
     if (!taskMatchesView(task)) continue;
     if (isHiddenByCollapse(taskIdx)) continue;
@@ -3182,6 +3188,7 @@ function renderTasks() {
         chk.addEventListener('click',()=>{
           if(isFutureRepeater) return; // future occurrence — can't mark done
           task.done=!task.done;
+          if(isAutoRepeater) task.doneDate = task.done ? _vw : null;
           if(task.done && !isAutoRepeater) task.sched=null; // don't clear repeater's schedule
           rerender();
         });
@@ -4830,7 +4837,7 @@ window.addEventListener('resize', drawConnections);
 window.addEventListener('scroll', drawConnections);
 
 // ── Repeat modal ───────────────────────────────────────────────────────────────
-let _repeatTask = null, _repeatIsNew = false;
+let _repeatTask = null, _repeatIsNew = false, _repeatHadRepeat = false;
 let _repeatFreq = 'none';
 let _repeatDay  = 0;
 let _repeatDOM  = 1;
@@ -4862,7 +4869,9 @@ function openTaskMenu(task, anchorEl) {
     items.push({ label: task.isEvent ? 'Convert to task' : 'Convert to event', fn: () => { task.isEvent = !task.isEvent; saveToStorage(); rerender(); } });
     items.push({ label: 'Move to…', fn: () => showMovePicker(anchorEl, proj => moveTaskToProject(task, proj), folder => moveTaskToFolder(task, folder)) });
   }
+  const _isAutoRep = !!(task.repeat && task.repeat.freq !== 'manual');
   items.push({ label: 'Delete', fn: () => {
+    if (_isAutoRep && !confirm(`Delete the repeater "${task.text}"?\n\nThis will remove it from the Repeaters panel and all future occurrences.`)) return;
     const sub = getSubtree(task);
     tasks = tasks.filter(t => !sub.includes(t));
     saveToStorage(); rerender();
@@ -4967,6 +4976,7 @@ $('#sched-modal').addEventListener('pointerdown', e => { if (e.target === $('#sc
 
 function openRepeatModal(task) {
   _repeatTask = task;
+  _repeatHadRepeat = !!task.repeat;
   $('#repeat-name-input').value = task.text || '';
   const r = task.repeat;
   _repeatFreq = r ? r.freq : 'none';
@@ -5004,6 +5014,7 @@ function submitRepeatModal() {
   if (nameVal) _repeatTask.text = nameVal;
   _repeatIsNew = false;
   if (_repeatFreq === 'none') {
+    if (_repeatHadRepeat && !confirm('Remove the repeat from this task?')) return;
     _repeatTask.repeat = null;
   } else if (_repeatFreq === 'manual') {
     _repeatTPW = Math.max(1, parseInt($('#repeat-tpw-input').value) || 1);
