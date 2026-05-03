@@ -63,13 +63,13 @@ body {
 .top-nav .header-date-text {
   flex: 1; justify-content: center;
 }
-.top-nav #header-h1 { font-size: 15px; font-weight: 600; color: #18181b; }
+.top-nav #header-h1 { font-size: 18px; font-weight: 700; color: #18181b; }
 .top-nav #header-sub { display: none; }
 .top-nav .date-nav-btn { font-size: 20px; padding: 4px 8px; color: #a0a0b4; }
 .top-nav .date-nav-btn:hover { color: #3f3f46; background: rgba(0,0,0,.05); }
 .view-toggle {
   display: flex; align-items: center; flex-shrink: 0;
-  border: 1px solid #e8e8ed; border-radius: 6px; overflow: hidden; margin-left: 4px;
+  border: 1px solid #e0e0e8; border-radius: 10px; overflow: hidden; margin-left: 4px;
 }
 .view-toggle-btn {
   border: none; background: transparent; padding: 4px 8px;
@@ -184,7 +184,7 @@ body {
 }
 .folder-drawer {
   position: absolute; bottom: 0; left: 0; right: 0;
-  background: #fff; border-radius: 14px 14px 0 0;
+  background: #fff; border-radius: 22px 22px 0 0;
   box-shadow: 0 -6px 32px rgba(0,0,0,0), 0 0 0 1px rgba(0,0,0,0);
   display: flex; flex-direction: column;
   max-height: 52vh;
@@ -541,9 +541,9 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: var(--a
 
 /* ── Pills ───────────────────────────────────────────────────────── */
 .pill {
-  flex: 1; display: flex; align-items: center; gap: 6px;
-  padding: 4px 9px 4px 8px;
-  border-radius: 7px; border: 1px solid #e8e8ed;
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px 9px 10px;
+  border-radius: 14px; border: 1px solid #e4e4ea;
   background: #f8f8fb; min-width: 0;
   transition: background .12s, border-color .12s;
   user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
@@ -566,15 +566,15 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: var(--a
   background: rgba(234,179,8,.04) !important;
 }
 .pill-chk {
-  flex-shrink: 0; width: 16px; height: 16px;
-  border: 1px solid #d8d8e0; border-radius: 50%; cursor: pointer;
+  flex-shrink: 0; width: 20px; height: 20px;
+  border: 1.5px solid #d0d0da; border-radius: 50%; cursor: pointer;
   display: grid; place-items: center; transition: all .12s;
 }
 .pill-chk:hover { border-color: var(--accent); }
 .pill-chk.done { background: var(--accent); border-color: var(--accent); }
 .pill-chk.done::after {
-  content: ''; width: 3.5px; height: 6px;
-  border-right: 1.5px solid #fff; border-bottom: 1.5px solid #fff;
+  content: ''; width: 4.5px; height: 7.5px;
+  border-right: 2px solid #fff; border-bottom: 2px solid #fff;
   transform: rotate(40deg) translate(0,-1px);
 }
 .pill-text {
@@ -658,10 +658,10 @@ body.dark .tl-zoom-btn:hover { background: rgba(255,255,255,.05); color: var(--a
 .date-panel {
   position: fixed;
   z-index: 9500;
-  width: 268px;
+  width: 290px;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.07);
+  border-radius: 22px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
   display: none;
   overflow: hidden;
 }
@@ -1651,7 +1651,7 @@ body.dark .qa-pick-item.selected { background: rgba(var(--accent-rgb),.12); }
   display: flex; align-items: center; justify-content: center;
 }
 .modal-card {
-  background: #fff; border-radius: 14px; padding: 24px 22px 20px;
+  background: #fff; border-radius: 22px; padding: 26px 24px 22px;
   width: 340px; box-shadow: 0 8px 40px rgba(0,0,0,.18);
   display: flex; flex-direction: column; gap: 12px;
 }
@@ -1699,8 +1699,8 @@ body.dark .qa-pick-item.selected { background: rgba(var(--accent-rgb),.12); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
 .modal-btn {
   border: 1px solid #d4d4d8; background: #fff; color: #3f3f46;
-  padding: 7px 16px; border-radius: 8px;
-  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  padding: 9px 20px; border-radius: 12px;
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
   transition: border-color .15s, background .15s;
 }
 .modal-btn:hover { border-color: #a1a1aa; background: #fafafa; }
@@ -1718,9 +1718,9 @@ body.dark .qa-pick-item.selected { background: rgba(var(--accent-rgb),.12); }
 .btn-settings.active { color: var(--accent); background: rgba(var(--accent-rgb),.08); }
 .settings-panel {
   position: fixed; z-index: 9200;
-  background: #fff; border-radius: 10px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.1), 0 0 0 1px rgba(0,0,0,.06);
-  padding: 8px 0; min-width: 180px;
+  background: #fff; border-radius: 18px;
+  box-shadow: 0 6px 32px rgba(0,0,0,.13), 0 0 0 1px rgba(0,0,0,.05);
+  padding: 10px 0; min-width: 200px;
   display: none; flex-direction: column;
 }
 .settings-panel.open { display: flex; }
@@ -1928,9 +1928,9 @@ body.dark .accent-swatch.active { box-shadow: 0 0 0 1.5px #1d1d22 inset; }
 .task-ctx-menu {
   position: fixed; z-index: 600;
   background: #fff; border: 1px solid #e0e0ea;
-  border-radius: 12px; overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0,0,0,.14), 0 0 0 1px rgba(0,0,0,.04);
-  min-width: 172px;
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.04);
+  min-width: 180px;
 }
 .task-ctx-item {
   display: block; width: 100%; border: none; background: transparent;
@@ -1942,7 +1942,7 @@ body.dark .accent-swatch.active { box-shadow: 0 0 0 1.5px #1d1d22 inset; }
 .task-ctx-item + .task-ctx-item { border-top: 1px solid #f0f0f4; }
 .task-ctx-item:active { background: #f0f0f8; }
 .task-ctx-item.ctx-danger { color: #ef4444; }
-body.dark .task-ctx-menu { background: #1e1e28; border-color: #2e2e3c; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+body.dark .task-ctx-menu { background: #1e1e28; border-color: rgba(255,255,255,.07); box-shadow: 0 10px 40px rgba(0,0,0,.55); }
 body.dark .task-ctx-item { color: #d0d0d8; }
 body.dark .task-ctx-item + .task-ctx-item { border-color: #28283a; }
 body.dark .task-ctx-item:active { background: #28283c; }
@@ -2050,9 +2050,9 @@ body.dark .tl-tick { background: #383848; }
 body.dark .tl-now-dot { border-color: #131316; }
 body.dark .tl-now-line { opacity: .4; }
 /* pills */
-body.dark .pill { background: #222228; border-color: #2c2c38; }
-body.dark .pill:hover { background: #28282e; border-color: #363642; }
-body.dark .pill.hl { background: #26262e; border-color: #36363e; }
+body.dark .pill { background: #242430; border-color: rgba(255,255,255,.06); }
+body.dark .pill:hover { background: #2a2a38; border-color: rgba(255,255,255,.1); }
+body.dark .pill.hl { background: #28283a; border-color: rgba(255,255,255,.09); }
 body.dark .pill-text { color: #d0d0d8; }
 body.dark .pill.done .pill-text { color: #404050; }
 body.dark .task-row.is-header .pill-text { color: #606072; }
@@ -2083,7 +2083,7 @@ body.dark .btn-settings:hover { background: rgba(255,255,255,.06); color: #c0c0d
 body.dark .btn-settings.active { color: #7c79f0; background: rgba(124,121,240,.1); }
 /* overflow + settings panels */
 body.dark .header-overflow-panel,
-body.dark .settings-panel { background: #1d1d24; box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06); }
+body.dark .settings-panel { background: #1e1e28; box-shadow: 0 6px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.07); }
 body.dark .overflow-divider, body.dark .settings-divider { background: #28283a; }
 body.dark .overflow-item { color: #b8b8c8; }
 body.dark .overflow-item:hover { background: #252532; color: #e0e0e8; }
@@ -2095,7 +2095,7 @@ body.dark .backup-entry-time { color: #5a5a72; }
 body.dark .backup-restore-btn { color: #7c79f0; }
 body.dark .toggle-track { background: #363648; }
 /* date panel */
-body.dark .date-panel { background: #1d1d24; box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06); }
+body.dark .date-panel { background: #1e1e28; box-shadow: 0 12px 48px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.07); }
 body.dark .date-panel-head { border-bottom-color: #28283a; }
 body.dark .dp-nav-btn { color: #484858; }
 body.dark .dp-nav-btn:hover { background: #26262e; color: #909090; }
@@ -2187,7 +2187,7 @@ body.dark #add-modal > div,
 body.dark #notes-modal > div,
 body.dark #repeat-modal > div,
 body.dark #sched-modal .modal-card,
-body.dark #quick-add-modal .modal-card { background: #1d1d24; box-shadow: 0 12px 48px rgba(0,0,0,.6); }
+body.dark #quick-add-modal .modal-card { background: #1e1e28; box-shadow: 0 16px 64px rgba(0,0,0,.7); }
 body.dark #qa-title { color: #d0d0d8; }
 body.dark #qa-text { background: #26262e; border-color: #36363e !important; color: #e4e4e8; }
 body.dark .modal-card h3 { color: #d0d0d8; }
