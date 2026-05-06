@@ -360,25 +360,28 @@
       cursor: pointer; transition: color 0.15s;
     }
     .note-del:hover { color: rgba(255,255,255,0.6); }
-    /* Connector line from note card to anchor point */
-    .note-connector {
-      position: absolute; height: 1px;
-      background: rgba(255,255,255,0.13);
-      transform-origin: left center;
-      pointer-events: none;
-      transition: opacity 0.2s;
+    /* Anchor highlight for text-linked notes (CSS Highlight API) */
+    ::highlight(note-anchor) {
+      background-color: rgba(255,255,255,0.07);
+      text-decoration-line: underline;
+      text-decoration-style: dotted;
+      text-decoration-color: rgba(255,255,255,0.3);
     }
-    .note-card:hover ~ .note-connector, .note-connector.active {
-      background: rgba(255,255,255,0.28);
+    ::highlight(note-anchor-hover) {
+      background-color: rgba(255,255,255,0.13);
+      text-decoration-line: underline;
+      text-decoration-style: solid;
+      text-decoration-color: rgba(255,255,255,0.6);
     }
-    /* Dot on the editor's left margin at the exact anchor line */
-    .note-anchor-dot {
-      position: absolute; width: 5px; height: 5px;
+    /* Small tick in the editor left margin for position-anchored notes */
+    .note-pos-marker {
+      position: absolute; width: 14px; height: 2px;
       background: rgba(255,255,255,0.22);
-      border-radius: 50%; pointer-events: none;
-      transform: translate(-50%, -50%);
-      transition: opacity 0.2s;
+      border-radius: 1px; pointer-events: none;
+      transform: translateY(-1px);
+      transition: background 0.15s;
     }
+    .note-pos-marker.active { background: rgba(255,255,255,0.55); }
     /* Selection add-note button */
     #note-add-btn {
       position: fixed; z-index: 6; pointer-events: all;
@@ -811,7 +814,38 @@ bnotes.addEventListener('click', () => {
   updateNotesBtn();
 });
 
-const noteConnectors = new Map(); // note id → { line, dot }
+// CSS Highlight API for text-anchored notes
+let noteAnchorHL = null, noteHoverHL = null;
+if (typeof CSS !== 'undefined' && CSS.highlights) {
+  noteAnchorHL = new Highlight();
+  noteHoverHL  = new Highlight();
+  CSS.highlights.set('note-anchor',       noteAnchorHL);
+  CSS.highlights.set('note-anchor-hover', noteHoverHL);
+}
+
+const notePosMarkers = new Map(); // note id → marker div (for docY notes)
+
+function getAnchorRange(anchorQuote) {
+  const idx = editor.textContent.indexOf(anchorQuote);
+  if (idx < 0) return null;
+  const s = textNodeAtOffset(idx);
+  const e2 = textNodeAtOffset(idx + anchorQuote.length);
+  if (!s || !e2) return null;
+  const r = new Range();
+  r.setStart(s.node, s.local);
+  r.setEnd(e2.node, e2.local);
+  return r;
+}
+
+function updateAnchorHighlights() {
+  if (!noteAnchorHL) return;
+  noteAnchorHL.clear();
+  notes.forEach(n => {
+    if (!n.anchorQuote) return;
+    const r = getAnchorRange(n.anchorQuote);
+    if (r) noteAnchorHL.add(r);
+  });
+}
 
 function saveNotes() {
   try { localStorage.setItem('zen-notes', JSON.stringify(notes)); } catch(e) {}
@@ -905,25 +939,35 @@ function makeNoteCard(n) {
     notes = notes.filter(x => x.id !== n.id);
     noteSizeCache.delete(n.id);
     card.remove();
-    const conn = noteConnectors.get(n.id);
-    if (conn) { conn.line.remove(); conn.dot.remove(); noteConnectors.delete(n.id); }
+    notePosMarkers.get(n.id)?.remove();
+    notePosMarkers.delete(n.id);
     saveNotes();
+    updateAnchorHighlights();
     positionNoteCards();
   });
   card.appendChild(del);
 
-  // Connector line + anchor dot
-  const line = document.createElement('div');
-  line.className = 'note-connector';
-  const dot  = document.createElement('div');
-  dot.className = 'note-anchor-dot';
-  noteOverlay.appendChild(line);
-  noteOverlay.appendChild(dot);
-  noteConnectors.set(n.id, { line, dot });
+  // For docY notes: a small marker div in the editor left margin
+  if (n.docY != null) {
+    const marker = document.createElement('div');
+    marker.className = 'note-pos-marker';
+    noteOverlay.appendChild(marker);
+    notePosMarkers.set(n.id, marker);
+  }
 
-  // Highlight connector on card hover
-  card.addEventListener('mouseenter', () => { line.classList.add('active'); dot.style.background = 'rgba(255,255,255,0.5)'; });
-  card.addEventListener('mouseleave', () => { line.classList.remove('active'); dot.style.background = ''; });
+  // Hover: show per-note anchor highlight / brighten position marker
+  card.addEventListener('mouseenter', () => {
+    if (n.anchorQuote && noteHoverHL) {
+      noteHoverHL.clear();
+      const r = getAnchorRange(n.anchorQuote);
+      if (r) noteHoverHL.add(r);
+    }
+    notePosMarkers.get(n.id)?.classList.add('active');
+  });
+  card.addEventListener('mouseleave', () => {
+    noteHoverHL?.clear();
+    notePosMarkers.get(n.id)?.classList.remove('active');
+  });
 
   noteOverlay.insertBefore(card, noteFreeBtn);
 
@@ -969,7 +1013,6 @@ function positionNoteCards() {
   const free       = items.filter(x => x.targetY == null);
 
   const editorLeft = Math.round(window.innerWidth / 2 - (S.pageWidth || 660) / 2);
-  const cardRight  = left + 210;
 
   let lastBottom = 8;
   positioned.forEach(({ card, n, targetY, h }) => {
@@ -977,46 +1020,21 @@ function positionNoteCards() {
     card.style.top = cardY + 'px';
     lastBottom = cardY + h + 8;
 
-    // Draw connector from card right-centre to anchor point on editor left edge
-    const conn = noteConnectors.get(n.id);
-    if (!conn) return;
-    // Exact anchor Y in viewport
-    let anchorY = null;
-    if (n.anchorQuote) anchorY = anchorViewY(n.anchorQuote);
-    else if (n.docY != null) anchorY = n.docY - window.scrollY;
-
-    if (anchorY == null || anchorY < -20 || anchorY > window.innerHeight + 20) {
-      conn.line.style.display = 'none';
-      conn.dot.style.display  = 'none';
-      return;
+    // For docY notes: place the position marker in the editor's left margin
+    const marker = notePosMarkers.get(n.id);
+    if (marker) {
+      const markerY = n.docY - window.scrollY;
+      if (markerY < -4 || markerY > window.innerHeight + 4) {
+        marker.style.display = 'none';
+      } else {
+        marker.style.cssText = `display:block;position:absolute;left:${editorLeft - 18}px;top:${markerY.toFixed(1)}px;`;
+      }
     }
-    conn.line.style.display = '';
-    conn.dot.style.display  = '';
-
-    // Card connection point: vertical centre of the card
-    const fromY = cardY + h / 2;
-    const fromX = cardRight;
-    const toX   = editorLeft;
-    const toY   = anchorY;
-
-    const dx     = toX - fromX;
-    const dy     = toY - fromY;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    const angle  = Math.atan2(dy, dx) * 180 / Math.PI;
-
-    conn.line.style.cssText = `display:block;position:absolute;height:1px;width:${length.toFixed(1)}px;` +
-      `left:${fromX}px;top:${fromY.toFixed(1)}px;` +
-      `transform:rotate(${angle.toFixed(2)}deg);transform-origin:left center;`;
-    conn.dot.style.cssText = `display:block;position:absolute;` +
-      `left:${toX}px;top:${toY.toFixed(1)}px;`;
   });
 
-  // Hide connectors for free notes (no anchor)
-  free.forEach(({ card, n, h }) => {
+  free.forEach(({ card, h }) => {
     card.style.top = lastBottom + 'px';
     lastBottom += h + 8;
-    const conn = noteConnectors.get(n.id);
-    if (conn) { conn.line.style.display = 'none'; conn.dot.style.display = 'none'; }
   });
 
   // Position the free-note button and the hit area
@@ -1030,6 +1048,7 @@ function addNote(anchorQuote, docY) {
   notes.push(n);
   saveNotes();
   const card = makeNoteCard(n);
+  updateAnchorHighlights();
   requestAnimationFrame(() => card.querySelector('.note-ta')?.focus());
 }
 
@@ -1518,7 +1537,7 @@ function updateWC() {
 
 // ── Input tracking ────────────────────────────────────────────────────────
 editor.addEventListener('input', () => {
-  saveContent(); updateWC(); updateTitle();
+  saveContent(); updateWC(); updateTitle(); updateAnchorHighlights();
   requestAnimationFrame(() => {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
@@ -1657,6 +1676,7 @@ document.addEventListener('keydown', e => {
   loadNotes();
   notes.forEach(n => makeNoteCard(n));
   updateNotesBtn();
+  updateAnchorHighlights();
   requestAnimationFrame(positionNoteCards);
 
   editor.focus();
