@@ -678,9 +678,10 @@ bedit.addEventListener('click', () => {
   editMode = !editMode;
   updateEditBtn();
   editor.focus();
-  if (!editMode && cursorDocY !== null) {
-    // Returning to write mode — spring back to cursor
-    scrollToY(cursorDocY - window.scrollY);
+  if (editMode) {
+    scrollTarget = null; // stop any in-flight spring scroll
+  } else if (cursorDocY !== null) {
+    scrollToY(cursorDocY - window.scrollY); // re-centre on exit
   }
 });
 
@@ -788,7 +789,7 @@ let textMotionT0     = null;
 
 (function scrollLoop() {
   try {
-  if (scrollTarget !== null) {
+  if (!editMode && scrollTarget !== null) {
     const dist = scrollTarget - window.scrollY;
     if (Math.abs(dist) < 0.8) {
       window.scrollTo(0, scrollTarget); scrollTarget = null;
