@@ -360,11 +360,24 @@
       cursor: pointer; transition: color 0.15s;
     }
     .note-del:hover { color: rgba(255,255,255,0.6); }
-    /* Thin tick on RIGHT edge pointing toward the editor */
-    .note-card::after {
-      content: ''; position: absolute;
-      right: -10px; top: 18px; width: 10px; height: 1px;
-      background: rgba(255,255,255,0.14);
+    /* Connector line from note card to anchor point */
+    .note-connector {
+      position: absolute; height: 1px;
+      background: rgba(255,255,255,0.13);
+      transform-origin: left center;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .note-card:hover ~ .note-connector, .note-connector.active {
+      background: rgba(255,255,255,0.28);
+    }
+    /* Dot on the editor's left margin at the exact anchor line */
+    .note-anchor-dot {
+      position: absolute; width: 5px; height: 5px;
+      background: rgba(255,255,255,0.22);
+      border-radius: 50%; pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.2s;
     }
     /* Selection add-note button */
     #note-add-btn {
@@ -798,6 +811,8 @@ bnotes.addEventListener('click', () => {
   updateNotesBtn();
 });
 
+const noteConnectors = new Map(); // note id → { line, dot }
+
 function saveNotes() {
   try { localStorage.setItem('zen-notes', JSON.stringify(notes)); } catch(e) {}
 }
@@ -890,10 +905,25 @@ function makeNoteCard(n) {
     notes = notes.filter(x => x.id !== n.id);
     noteSizeCache.delete(n.id);
     card.remove();
+    const conn = noteConnectors.get(n.id);
+    if (conn) { conn.line.remove(); conn.dot.remove(); noteConnectors.delete(n.id); }
     saveNotes();
     positionNoteCards();
   });
   card.appendChild(del);
+
+  // Connector line + anchor dot
+  const line = document.createElement('div');
+  line.className = 'note-connector';
+  const dot  = document.createElement('div');
+  dot.className = 'note-anchor-dot';
+  noteOverlay.appendChild(line);
+  noteOverlay.appendChild(dot);
+  noteConnectors.set(n.id, { line, dot });
+
+  // Highlight connector on card hover
+  card.addEventListener('mouseenter', () => { line.classList.add('active'); dot.style.background = 'rgba(255,255,255,0.5)'; });
+  card.addEventListener('mouseleave', () => { line.classList.remove('active'); dot.style.background = ''; });
 
   noteOverlay.insertBefore(card, noteFreeBtn);
 
@@ -938,15 +968,55 @@ function positionNoteCards() {
   const positioned = items.filter(x => x.targetY != null).sort((a, b) => a.targetY - b.targetY);
   const free       = items.filter(x => x.targetY == null);
 
+  const editorLeft = Math.round(window.innerWidth / 2 - (S.pageWidth || 660) / 2);
+  const cardRight  = left + 210;
+
   let lastBottom = 8;
-  positioned.forEach(({ card, targetY, h }) => {
-    const y = Math.max(targetY, lastBottom);
-    card.style.top = y + 'px';
-    lastBottom = y + h + 8;
+  positioned.forEach(({ card, n, targetY, h }) => {
+    const cardY = Math.max(targetY, lastBottom);
+    card.style.top = cardY + 'px';
+    lastBottom = cardY + h + 8;
+
+    // Draw connector from card right-centre to anchor point on editor left edge
+    const conn = noteConnectors.get(n.id);
+    if (!conn) return;
+    // Exact anchor Y in viewport
+    let anchorY = null;
+    if (n.anchorQuote) anchorY = anchorViewY(n.anchorQuote);
+    else if (n.docY != null) anchorY = n.docY - window.scrollY;
+
+    if (anchorY == null || anchorY < -20 || anchorY > window.innerHeight + 20) {
+      conn.line.style.display = 'none';
+      conn.dot.style.display  = 'none';
+      return;
+    }
+    conn.line.style.display = '';
+    conn.dot.style.display  = '';
+
+    // Card connection point: vertical centre of the card
+    const fromY = cardY + h / 2;
+    const fromX = cardRight;
+    const toX   = editorLeft;
+    const toY   = anchorY;
+
+    const dx     = toX - fromX;
+    const dy     = toY - fromY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle  = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    conn.line.style.cssText = `display:block;position:absolute;height:1px;width:${length.toFixed(1)}px;` +
+      `left:${fromX}px;top:${fromY.toFixed(1)}px;` +
+      `transform:rotate(${angle.toFixed(2)}deg);transform-origin:left center;`;
+    conn.dot.style.cssText = `display:block;position:absolute;` +
+      `left:${toX}px;top:${toY.toFixed(1)}px;`;
   });
-  free.forEach(({ card, h }) => {
+
+  // Hide connectors for free notes (no anchor)
+  free.forEach(({ card, n, h }) => {
     card.style.top = lastBottom + 'px';
     lastBottom += h + 8;
+    const conn = noteConnectors.get(n.id);
+    if (conn) { conn.line.style.display = 'none'; conn.dot.style.display = 'none'; }
   });
 
   // Position the free-note button and the hit area
