@@ -317,6 +317,14 @@
       position: fixed; inset: 0;
       pointer-events: none; z-index: 5;
     }
+    /* Clickable background for the notes column — sits behind cards */
+    #note-col-hit {
+      position: fixed; top: 0; bottom: 0; width: 210px;
+      pointer-events: all; z-index: 4;
+      cursor: crosshair;
+    }
+    #note-col-hit.hidden { display: none; }
+    @media (max-width: 920px) { #note-col-hit { display: none !important; } }
     .note-card {
       position: absolute; width: 210px;
       pointer-events: all;
@@ -520,8 +528,9 @@
   </div>
 
   <!-- Margin notes -->
+  <div id="note-col-hit" title="Click to add a note here"></div>
   <div id="note-overlay">
-    <button id="note-free-btn">+ new note</button>
+    <button id="note-free-btn">+ free note</button>
   </div>
   <div id="note-add-btn" title="Add note for selection">+</div>
 
@@ -774,6 +783,7 @@ let notesVisible = true;
 const noteOverlay  = document.getElementById('note-overlay');
 const noteAddBtn   = document.getElementById('note-add-btn');
 const noteFreeBtn  = document.getElementById('note-free-btn');
+const noteColHit   = document.getElementById('note-col-hit');
 const noteSizeCache = new Map(); // id → last known offsetHeight
 
 function updateNotesBtn() {
@@ -783,6 +793,7 @@ function updateNotesBtn() {
 bnotes.addEventListener('click', () => {
   notesVisible = !notesVisible;
   noteOverlay.classList.toggle('hidden', !notesVisible);
+  noteColHit.classList.toggle('hidden', !notesVisible);
   noteAddBtn.style.display = 'none';
   updateNotesBtn();
 });
@@ -915,17 +926,21 @@ function positionNoteCards() {
       const vy = anchorViewY(n.anchorQuote);
       targetY = vy !== null ? Math.round(vy - 10) : null;
       card.classList.toggle('orphaned', vy === null);
+    } else if (n.docY != null) {
+      // Position-anchored: locked to a document Y (blank area note)
+      targetY = Math.round(n.docY - window.scrollY - 10);
+      card.classList.remove('orphaned');
     }
     items.push({ card, n, targetY, h });
   });
 
-  // Anchored notes sorted by Y, free notes after
-  const anchored = items.filter(x => x.n.anchorQuote).sort((a, b) => (a.targetY ?? 99999) - (b.targetY ?? 99999));
-  const free     = items.filter(x => !x.n.anchorQuote);
+  // Sort all positioned notes (text-anchored + position-anchored) by Y; free notes last
+  const positioned = items.filter(x => x.targetY != null).sort((a, b) => a.targetY - b.targetY);
+  const free       = items.filter(x => x.targetY == null);
 
   let lastBottom = 8;
-  anchored.forEach(({ card, targetY, h }) => {
-    const y = Math.max(targetY ?? lastBottom, lastBottom);
+  positioned.forEach(({ card, targetY, h }) => {
+    const y = Math.max(targetY, lastBottom);
     card.style.top = y + 'px';
     lastBottom = y + h + 8;
   });
@@ -934,13 +949,14 @@ function positionNoteCards() {
     lastBottom += h + 8;
   });
 
-  // Position the free-note button below all cards
+  // Position the free-note button and the hit area
   noteFreeBtn.style.left = left + 'px';
   noteFreeBtn.style.top  = lastBottom + 'px';
+  noteColHit.style.left  = left + 'px';
 }
 
-function addNote(anchorQuote) {
-  const n = { id: noteUid++, noteText: '', anchorQuote: anchorQuote || null };
+function addNote(anchorQuote, docY) {
+  const n = { id: noteUid++, noteText: '', anchorQuote: anchorQuote || null, docY: docY ?? null };
   notes.push(n);
   saveNotes();
   const card = makeNoteCard(n);
@@ -974,7 +990,14 @@ noteAddBtn.addEventListener('click', () => {
   if (text) addNote(text);
 });
 
-noteFreeBtn.addEventListener('click', () => addNote(null));
+// Free note button — unanchored, stacks at bottom
+noteFreeBtn.addEventListener('click', () => addNote(null, null));
+
+// Click anywhere in the notes column → position-anchored note at that doc Y
+noteColHit.addEventListener('click', e => {
+  if (!notesVisible) return;
+  addNote(null, e.clientY + window.scrollY);
+});
 
 // Reposition notes whenever the document scrolls or window resizes
 window.addEventListener('scroll', positionNoteCards, { passive: true });
