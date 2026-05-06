@@ -1,4 +1,4 @@
-const CACHE = 'habit-watcher-v47';
+const CACHE = 'habit-watcher-v48';
 
 // Only precache local files — external CDN URLs cause addAll() to fail
 const PRECACHE = [
