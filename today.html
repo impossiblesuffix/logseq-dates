@@ -36,46 +36,64 @@ body {
   padding-bottom: max(env(safe-area-inset-bottom), 16px);
 }
 
+/* ── Auth screen ─────────────────────────────────────────────────────────── */
+#auth-screen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 100dvh;
+  padding: 32px 24px; gap: 20px;
+}
+.auth-card {
+  background: var(--surface); border-radius: 16px;
+  padding: 28px 24px; width: 100%; max-width: 360px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.auth-title { font-size: 20px; font-weight: 700; text-align: center; }
+.auth-sub { font-size: 13px; color: var(--muted); text-align: center; margin-top: -6px; }
+.auth-field {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; font-size: 16px;
+  background: var(--bg); color: var(--text); outline: none;
+  -webkit-appearance: none;
+}
+.auth-field:focus { border-color: var(--accent); }
+.auth-field::placeholder { color: var(--muted); }
+.auth-btn {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 10px; padding: 13px;
+  font-size: 16px; font-weight: 600; cursor: pointer; width: 100%;
+}
+.auth-btn:active { opacity: .85; }
+.auth-btn:disabled { opacity: .5; cursor: default; }
+.auth-err { font-size: 13px; color: #e11d48; text-align: center; min-height: 18px; }
+
+/* ── App screen ──────────────────────────────────────────────────────────── */
+#app-screen { display: none; }
+
 /* ── Header ─────────────────────────────────────────────────────────────── */
 header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+  background: var(--surface); border-bottom: 1px solid var(--border);
   padding: 14px 20px 12px;
   padding-top: max(14px, env(safe-area-inset-top));
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
 }
 .hdr-left { display: flex; flex-direction: column; gap: 1px; }
 .hdr-title { font-size: 22px; font-weight: 700; line-height: 1.2; }
 .hdr-sub { font-size: 13px; color: var(--muted); }
 .hdr-link {
-  font-size: 13px; font-weight: 500;
-  color: var(--accent); text-decoration: none;
-  white-space: nowrap; padding: 4px 0;
+  font-size: 13px; font-weight: 500; color: var(--accent);
+  text-decoration: none; white-space: nowrap; padding: 4px 0;
 }
 
 /* ── Main content ────────────────────────────────────────────────────────── */
 main { padding: 12px 16px 0; max-width: 520px; margin: 0 auto; }
-
-.section-lbl {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .5px; color: var(--muted);
-  margin: 16px 0 8px 4px;
-}
-.section-lbl:first-child { margin-top: 4px; }
 
 /* ── Task rows ───────────────────────────────────────────────────────────── */
 .task-row {
   display: flex; align-items: center; gap: 12px;
   background: var(--surface); border-radius: 10px;
   padding: 12px 14px; margin-bottom: 6px;
-  cursor: pointer; user-select: none;
-  transition: opacity .12s;
+  cursor: pointer; user-select: none; transition: opacity .12s;
 }
 .task-row:active { opacity: .65; }
 .task-row.is-header {
@@ -95,28 +113,23 @@ main { padding: 12px 16px 0; max-width: 520px; margin: 0 auto; }
 }
 .chk.done { background: var(--accent); border-color: var(--accent); }
 .chk.done::after {
-  content: '';
+  content: ''; display: block;
   width: 5px; height: 9px;
   border-right: 2px solid #fff; border-bottom: 2px solid #fff;
   transform: rotate(45deg) translate(-1px, -1px);
-  display: block;
 }
 
 .task-text { flex: 1; font-size: 15px; line-height: 1.35; min-width: 0; }
 .task-text.done { text-decoration: line-through; color: var(--done-text); }
 .task-time { font-size: 12px; color: var(--muted); flex-shrink: 0; }
 
-.empty-msg {
-  text-align: center; color: var(--muted); font-size: 14px;
-  padding: 28px 0 12px;
-}
+.empty-msg { text-align: center; color: var(--muted); font-size: 14px; padding: 28px 0 12px; }
 
-/* ── Upcoming section ────────────────────────────────────────────────────── */
+/* ── Upcoming ────────────────────────────────────────────────────────────── */
 .upcoming-btn {
   display: flex; align-items: center; gap: 5px;
   background: none; border: none; padding: 10px 4px;
-  color: var(--accent); font-size: 13px; font-weight: 500;
-  cursor: pointer; margin-top: 4px;
+  color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px;
 }
 .upcoming-btn .arr { display: inline-block; transition: transform .18s; font-style: normal; }
 .upcoming-btn.open .arr { transform: rotate(90deg); }
@@ -124,14 +137,13 @@ main { padding: 12px 16px 0; max-width: 520px; margin: 0 auto; }
 #upcoming-body.open { display: block; }
 .dg-label { font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 0 6px 4px; }
 
-/* ── Add task area ───────────────────────────────────────────────────────── */
+/* ── Add task ────────────────────────────────────────────────────────────── */
 .add-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
 .add-row { display: flex; gap: 8px; }
 .add-input {
   flex: 1; border: 1.5px solid var(--border); border-radius: 10px;
   padding: 11px 14px; font-size: 15px;
-  background: var(--surface); color: var(--text); outline: none;
-  -webkit-appearance: none;
+  background: var(--surface); color: var(--text); outline: none; -webkit-appearance: none;
 }
 .add-input:focus { border-color: var(--accent); }
 .add-input::placeholder { color: var(--muted); }
@@ -145,8 +157,7 @@ main { padding: 12px 16px 0; max-width: 520px; margin: 0 auto; }
 .date-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .chip {
   background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 20px; padding: 5px 12px;
-  font-size: 13px; cursor: pointer; color: var(--text);
+  border-radius: 20px; padding: 5px 12px; font-size: 13px; cursor: pointer; color: var(--text);
 }
 .chip.active { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb),.08); }
 .chip:active { opacity: .7; }
@@ -156,155 +167,223 @@ main { padding: 12px 16px 0; max-width: 520px; margin: 0 auto; }
 #custom-date {
   width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
   padding: 10px 14px; font-size: 15px;
-  background: var(--surface); color: var(--text); outline: none;
-  -webkit-appearance: none;
+  background: var(--surface); color: var(--text); outline: none; -webkit-appearance: none;
 }
 #custom-date:focus { border-color: var(--accent); }
 
-.footer-note { font-size: 11px; color: var(--muted); text-align: center; padding: 20px 0 4px; }
+.footer-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 0 4px; gap: 12px;
+}
+.footer-note { font-size: 11px; color: var(--muted); }
+.signout-btn {
+  background: none; border: none; font-size: 11px; color: var(--muted);
+  cursor: pointer; padding: 0; text-decoration: underline;
+}
 </style>
 </head>
 <body>
-<header>
-  <div class="hdr-left">
-    <div class="hdr-title" id="hdr-day"></div>
-    <div class="hdr-sub" id="hdr-date"></div>
+
+<!-- ── Auth screen ──────────────────────────────────────────────────────────── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-title">Habit Watcher</div>
+    <div class="auth-sub">Sign in to see your tasks</div>
+    <input id="auth-email" class="auth-field" type="email"
+      placeholder="Email" autocomplete="email" inputmode="email">
+    <input id="auth-pass" class="auth-field" type="password"
+      placeholder="Password" autocomplete="current-password">
+    <div id="auth-err" class="auth-err"></div>
+    <button id="auth-btn" class="auth-btn">Sign in</button>
   </div>
-  <a class="hdr-link" href="./">Full app →</a>
-</header>
+</div>
 
-<main>
-  <div id="today-list"></div>
-
-  <button class="upcoming-btn" id="upcoming-btn">
-    <i class="arr">›</i> Upcoming (7 days)
-  </button>
-  <div id="upcoming-body"></div>
-
-  <div class="add-section">
-    <div class="add-row">
-      <input id="new-text" class="add-input" type="text"
-        placeholder="Add a task…"
-        autocomplete="off" autocorrect="on" autocapitalize="sentences"
-        spellcheck="true">
-      <button class="add-submit" id="add-btn">Add</button>
+<!-- ── App screen ───────────────────────────────────────────────────────────── -->
+<div id="app-screen">
+  <header>
+    <div class="hdr-left">
+      <div class="hdr-title" id="hdr-day"></div>
+      <div class="hdr-sub" id="hdr-date"></div>
     </div>
-    <div class="date-chips">
-      <button class="chip active" data-val="">Today</button>
-      <button class="chip" data-val="1">Tomorrow</button>
-      <button class="chip" data-val="7">Next week</button>
-      <button class="chip" data-val="custom">Pick date…</button>
-    </div>
-    <div id="custom-date-wrap">
-      <input type="date" id="custom-date">
-    </div>
-  </div>
+    <a class="hdr-link" href="./">Full app →</a>
+  </header>
 
-  <div class="footer-note">Changes saved locally &amp; synced to cloud</div>
-</main>
+  <main>
+    <div id="today-list"></div>
+
+    <button class="upcoming-btn" id="upcoming-btn">
+      <i class="arr">›</i> Upcoming (7 days)
+    </button>
+    <div id="upcoming-body"></div>
+
+    <div class="add-section">
+      <div class="add-row">
+        <input id="new-text" class="add-input" type="text"
+          placeholder="Add a task…"
+          autocomplete="off" autocorrect="on" autocapitalize="sentences" spellcheck="true">
+        <button class="add-submit" id="add-btn">Add</button>
+      </div>
+      <div class="date-chips">
+        <button class="chip active" data-val="">Today</button>
+        <button class="chip" data-val="1">Tomorrow</button>
+        <button class="chip" data-val="7">Next week</button>
+        <button class="chip" data-val="custom">Pick date…</button>
+      </div>
+      <div id="custom-date-wrap">
+        <input type="date" id="custom-date">
+      </div>
+    </div>
+
+    <div class="footer-row">
+      <span class="footer-note">Synced to cloud</span>
+      <button class="signout-btn" id="signout-btn">Sign out</button>
+    </div>
+  </main>
+</div>
 
 <script>
-const STORAGE_KEY  = 'habit-watcher-v1';
-const PREFS_KEY    = 'habit-watcher-prefs';
-const ACCENT_KEY   = 'habit-watcher-accent';
-const SB_URL       = 'https://jknktlasejgfdeanrxed.supabase.co';
-const SB_ANON      = 'sb_publishable_YBWnnJq_Zwipp5kLJS3CBw_vDPsrOZy';
-const SB_AUTH_KEY  = 'sb-jknktlasejgfdeanrxed-auth-token';
+const STORAGE_KEY = 'habit-watcher-v1';
+const PREFS_KEY   = 'habit-watcher-prefs';
+const ACCENT_KEY  = 'habit-watcher-accent';
+const SB_URL      = 'https://jknktlasejgfdeanrxed.supabase.co';
+const SB_ANON     = 'sb_publishable_YBWnnJq_Zwipp5kLJS3CBw_vDPsrOZy';
+const SB_AUTH_KEY = 'sb-jknktlasejgfdeanrxed-auth-token';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────────────────────────
 
 function toDateStr(dt) {
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 }
-
 function todayStr() { return toDateStr(new Date()); }
-
 function offsetDate(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return toDateStr(d);
+  const d = new Date(); d.setDate(d.getDate() + days); return toDateStr(d);
 }
-
 function fmtDateLabel(ds) {
-  const [y, m, d] = ds.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
+  const [y,m,d] = ds.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   if (ds === offsetDate(1)) return 'Tomorrow';
   return `${DAYS[dt.getDay()]} ${MONTHS[m-1]} ${d}`;
 }
-
 function fmtTime(t) {
   if (!t) return '';
-  const [h, mn] = t.split(':').map(Number);
-  const ap = h < 12 ? 'am' : 'pm';
-  const hr = h % 12 || 12;
+  const [h,mn] = t.split(':').map(Number);
+  const ap = h < 12 ? 'am' : 'pm', hr = h%12||12;
   return mn ? `${hr}:${String(mn).padStart(2,'0')}${ap}` : `${hr}${ap}`;
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
-let state = {
+function getStoredSession() {
+  try { return JSON.parse(localStorage.getItem(SB_AUTH_KEY)); } catch { return null; }
+}
+
+function storeSession(s) {
+  localStorage.setItem(SB_AUTH_KEY, JSON.stringify(s));
+}
+
+async function signIn(email, password) {
+  const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'apikey': SB_ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || 'Sign in failed');
+  storeSession(data);
+  return data;
+}
+
+async function refreshSession(refreshToken) {
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SB_ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    storeSession(data);
+    return data;
+  } catch { return null; }
+}
+
+async function getValidSession() {
+  const s = getStoredSession();
+  if (!s?.access_token) return null;
+  const nowSecs = Math.floor(Date.now() / 1000);
+  // Refresh if token expires within 60 seconds
+  if (s.expires_at && s.expires_at < nowSecs + 60) {
+    if (!s.refresh_token) return null;
+    return refreshSession(s.refresh_token);
+  }
+  return s;
+}
+
+async function fetchCloudData(session) {
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/user_data?select=data&id=eq.${session.user.id}`,
+      { headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${session.access_token}` } }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows[0]?.data || null;
+  } catch { return null; }
+}
+
+async function pushToSupabase() {
+  try {
+    const s = getStoredSession();
+    if (!s?.access_token || !s?.user?.id) return;
+    await fetch(`${SB_URL}/rest/v1/user_data?on_conflict=id`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_ANON,
+        'Authorization': `Bearer ${s.access_token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ id: s.user.id, data: appState })
+    });
+  } catch {}
+}
+
+// ── App state ─────────────────────────────────────────────────────────────────
+
+let appState = {
   tasks: [], uid: 0, projects: [], pUid: 0,
   horizons: [], hUid: 0, hItemUid: 0,
   folders: [], fUid: 0,
   hideCompleted: false, tlStart: 0, tlEnd: 0, savedAt: 0
 };
+let _justToggled = new Set();
 
-let _justToggled = new Set(); // task IDs toggled this session
-
-function loadState() {
+function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) state = JSON.parse(raw);
-  } catch(e) {}
+    if (raw) appState = JSON.parse(raw);
+  } catch {}
 }
 
-function saveState() {
-  state.savedAt = Date.now();
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+function persistState() {
+  appState.savedAt = Date.now();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); } catch {}
   pushToSupabase();
 }
 
-async function pushToSupabase() {
-  try {
-    const raw = localStorage.getItem(SB_AUTH_KEY);
-    if (!raw) return;
-    const auth = JSON.parse(raw);
-    const token = auth?.access_token;
-    const userId = auth?.user?.id;
-    if (!token || !userId) return;
-    await fetch(`${SB_URL}/rest/v1/user_data?on_conflict=id`, {
-      method: 'POST',
-      headers: {
-        'apikey': SB_ANON,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ id: userId, data: state })
-    });
-  } catch(e) {}
-}
-
-// ── Task helpers ──────────────────────────────────────────────────────────────
+// ── Task logic ────────────────────────────────────────────────────────────────
 
 function isAutoRep(t) { return !!(t.repeat && t.repeat.freq !== 'manual'); }
-
-function isDoneFor(t, ds) {
-  return isAutoRep(t) ? (t.done && t.doneDate === ds) : t.done;
-}
+function isDoneFor(t, ds) { return isAutoRep(t) ? (t.done && t.doneDate === ds) : t.done; }
 
 function taskDateFor(t) {
-  // Resolve date for normal tasks, including inherited date from parent header
   let date = t.sched?.date ?? null;
   if (!date && t.indent > 0) {
-    const idx = state.tasks.indexOf(t);
-    for (let i = idx - 1; i >= 0; i--) {
-      if (state.tasks[i].indent < t.indent) {
-        date = state.tasks[i].sched?.date ?? null;
-        break;
-      }
+    const idx = appState.tasks.indexOf(t);
+    for (let i = idx-1; i >= 0; i--) {
+      if (appState.tasks[i].indent < t.indent) { date = appState.tasks[i].sched?.date ?? null; break; }
     }
   }
   return date;
@@ -318,16 +397,12 @@ function matchesDate(t, ds) {
     const start = t.sched?.date || ts;
     if (ds < start) return false;
     if (until && ds > until) return false;
-    // Don't show future repeaters in upcoming (respect main app pref)
     if (ds > ts) {
-      try {
-        const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
-        if (prefs.showFutureRepeaters === false) return false;
-      } catch(e) {}
+      try { if (JSON.parse(localStorage.getItem(PREFS_KEY)||'{}').showFutureRepeaters === false) return false; } catch {}
     }
     if (freq === 'daily') return true;
     const dt = new Date(ds + 'T00:00:00');
-    const monDow = (dt.getDay() + 6) % 7;
+    const monDow = (dt.getDay()+6)%7;
     if (freq === 'weekly') return monDow === day;
     if (freq === 'monthly') return dt.getDate() === dayOfMonth;
     return false;
@@ -343,29 +418,24 @@ function matchesDate(t, ds) {
 function shouldShowToday(t) {
   if (!matchesDate(t, todayStr())) return false;
   if (!t.isHeader) {
-    const ts = todayStr();
-    const auto = isAutoRep(t);
-    const done = isDoneFor(t, ts);
-    // Hide old completed tasks (done + no scheduled date + not repeater)
-    // unless the user just toggled them in this session (for undo)
-    if (done && !auto && !t.sched?.date && !_justToggled.has(t.id)) return false;
+    const done = isDoneFor(t, todayStr());
+    if (done && !isAutoRep(t) && !t.sched?.date && !_justToggled.has(t.id)) return false;
   }
   return true;
 }
 
 function toggleDone(t) {
   const ts = todayStr();
-  const auto = isAutoRep(t);
   const wasDone = isDoneFor(t, ts);
   _justToggled.add(t.id);
-  if (auto) {
+  if (isAutoRep(t)) {
     t.done = !wasDone;
     t.doneDate = t.done ? ts : null;
   } else {
     t.done = !t.done;
     if (t.done) t.sched = null;
   }
-  saveState();
+  persistState();
   render();
 }
 
@@ -375,7 +445,7 @@ function applyTheme() {
   try {
     const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
     document.body.classList.toggle('dark', !!prefs.darkMode);
-  } catch(e) {}
+  } catch {}
   try {
     const acc = JSON.parse(localStorage.getItem(ACCENT_KEY));
     if (acc) {
@@ -383,7 +453,7 @@ function applyTheme() {
       document.documentElement.style.setProperty('--accent-rgb', acc.rgb);
       document.getElementById('theme-color-meta').content = acc.hex;
     }
-  } catch(e) {}
+  } catch {}
 }
 
 function buildTaskEl(t, ds) {
@@ -397,16 +467,12 @@ function buildTaskEl(t, ds) {
   const row = document.createElement('div');
   row.className = 'task-row' + (t.indent === 1 ? ' indent-1' : t.indent >= 2 ? ' indent-2' : '');
   row.addEventListener('click', () => toggleDone(t));
-
   const chk = document.createElement('div');
   chk.className = 'chk' + (done ? ' done' : '');
-
   const txt = document.createElement('div');
   txt.className = 'task-text' + (done ? ' done' : '');
   txt.textContent = t.text;
-
   row.append(chk, txt);
-
   if (t.sched?.t) {
     const time = document.createElement('div');
     time.className = 'task-time';
@@ -421,46 +487,34 @@ function render() {
   const todayEl = document.getElementById('today-list');
   const upEl    = document.getElementById('upcoming-body');
 
-  // ── Today ────────────────────────────────────────────────────────────────
-  const todayItems = state.tasks.filter(t => shouldShowToday(t));
+  const todayItems = appState.tasks.filter(t => shouldShowToday(t));
   todayEl.innerHTML = '';
-
   if (!todayItems.length) {
     const em = document.createElement('div');
-    em.className = 'empty-msg';
-    em.textContent = 'No tasks for today ✓';
+    em.className = 'empty-msg'; em.textContent = 'No tasks for today ✓';
     todayEl.append(em);
   } else {
     todayItems.forEach(t => todayEl.append(buildTaskEl(t, ts)));
   }
 
-  // ── Upcoming ─────────────────────────────────────────────────────────────
   upEl.innerHTML = '';
   let hasUpcoming = false;
-
   for (let i = 1; i <= 7; i++) {
     const ds = offsetDate(i);
-    const dayTasks = state.tasks.filter(t => !t.isHeader && matchesDate(t, ds) && !isDoneFor(t, ds));
+    const dayTasks = appState.tasks.filter(t => !t.isHeader && matchesDate(t, ds) && !isDoneFor(t, ds));
     if (!dayTasks.length) continue;
     hasUpcoming = true;
-
     const lbl = document.createElement('div');
-    lbl.className = 'dg-label';
-    lbl.textContent = fmtDateLabel(ds);
+    lbl.className = 'dg-label'; lbl.textContent = fmtDateLabel(ds);
     upEl.append(lbl);
     dayTasks.forEach(t => upEl.append(buildTaskEl(t, ds)));
   }
-
   if (!hasUpcoming) {
     const em = document.createElement('div');
-    em.className = 'empty-msg';
-    em.style.paddingTop = '12px';
-    em.textContent = 'Nothing coming up';
+    em.className = 'empty-msg'; em.style.paddingTop = '12px'; em.textContent = 'Nothing coming up';
     upEl.append(em);
   }
 }
-
-// ── Header ────────────────────────────────────────────────────────────────────
 
 function updateHeader() {
   const dt = new Date();
@@ -470,16 +524,21 @@ function updateHeader() {
   document.getElementById('hdr-date').textContent = `${MONTHS[dt.getMonth()]} ${dt.getDate()}`;
 }
 
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display  = 'block';
+  applyTheme();
+  updateHeader();
+  render();
+}
+
 // ── Add task ──────────────────────────────────────────────────────────────────
 
-let selectedDateVal = ''; // '' = today, '1' = +1 day, '7' = +7 days, 'custom'
+let selectedDateVal = '';
 
 function resolveTargetDate() {
   if (!selectedDateVal) return null;
-  if (selectedDateVal === 'custom') {
-    const v = document.getElementById('custom-date').value;
-    return v || null;
-  }
+  if (selectedDateVal === 'custom') return document.getElementById('custom-date').value || null;
   return offsetDate(parseInt(selectedDateVal, 10));
 }
 
@@ -487,58 +546,97 @@ function addTask() {
   const inp  = document.getElementById('new-text');
   const text = inp.value.trim();
   if (!text) { inp.focus(); return; }
-
-  const date  = resolveTargetDate();
-  const sched = date ? { date } : null;
-
-  state.tasks.push({ id: ++state.uid, text, isHeader: false, done: false, indent: 0, color: null, sched });
+  const date = resolveTargetDate();
+  appState.tasks.push({ id: ++appState.uid, text, isHeader: false, done: false, indent: 0, color: null, sched: date ? { date } : null });
   inp.value = '';
-  saveState();
+  persistState();
   render();
   inp.focus();
 }
 
-// ── Wire up UI ────────────────────────────────────────────────────────────────
+// ── UI events ─────────────────────────────────────────────────────────────────
 
-// Upcoming toggle
 document.getElementById('upcoming-btn').addEventListener('click', function() {
   this.classList.toggle('open');
   document.getElementById('upcoming-body').classList.toggle('open');
 });
 
-// Date chips
 document.querySelectorAll('.chip').forEach(chip => {
   chip.addEventListener('click', function() {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     this.classList.add('active');
     selectedDateVal = this.dataset.val;
-    const wrap = document.getElementById('custom-date-wrap');
-    wrap.classList.toggle('show', selectedDateVal === 'custom');
+    document.getElementById('custom-date-wrap').classList.toggle('show', selectedDateVal === 'custom');
   });
 });
 
-// Add button / Enter key
 document.getElementById('add-btn').addEventListener('click', addTask);
-document.getElementById('new-text').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addTask();
-});
+document.getElementById('new-text').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
-// Set custom date picker minimum to tomorrow
 const custEl = document.getElementById('custom-date');
 custEl.min = offsetDate(1);
 custEl.value = offsetDate(1);
 
-// Cross-tab sync: if main app saves while this page is open
-window.addEventListener('storage', e => {
-  if (e.key === STORAGE_KEY) { loadState(); render(); }
+document.getElementById('signout-btn').addEventListener('click', () => {
+  localStorage.removeItem(SB_AUTH_KEY);
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-err').textContent = '';
+  document.getElementById('auth-pass').value = '';
 });
+
+window.addEventListener('storage', e => {
+  if (e.key === STORAGE_KEY) { loadLocalState(); render(); }
+});
+
+// ── Auth UI ───────────────────────────────────────────────────────────────────
+
+async function handleSignIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const btn   = document.getElementById('auth-btn');
+  const err   = document.getElementById('auth-err');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Please enter email and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const session = await signIn(email, pass);
+    const data = await fetchCloudData(session);
+    if (data) {
+      appState = data;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+    }
+    showApp();
+  } catch(e) {
+    err.textContent = e.message || 'Sign in failed.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+document.getElementById('auth-btn').addEventListener('click', handleSignIn);
+document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignIn(); });
+document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pass').focus(); });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
-loadState();
-applyTheme();
-updateHeader();
-render();
+(async () => {
+  const session = await getValidSession();
+  if (!session) return; // auth screen already visible
+
+  // Show data from localStorage immediately (fast)
+  loadLocalState();
+  showApp();
+
+  // Background: pull fresh data from Supabase, re-render if newer
+  const data = await fetchCloudData(session);
+  if (data && (!appState.savedAt || data.savedAt >= appState.savedAt)) {
+    appState = data;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+    render();
+  }
+})();
 </script>
 </body>
 </html>
