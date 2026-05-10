@@ -10,5 +10,14 @@
   "orientation": "portrait-primary",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's Tasks",
+      "short_name": "Today",
+      "description": "Quick view of today's to-do list",
+      "url": "./today.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    }
   ]
 }

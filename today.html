@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#4f46e5" id="theme-color-meta">
+<title>Today — Habit Watcher</title>
+<style>
+:root {
+  --accent: #4f46e5;
+  --accent-rgb: 79,70,229;
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --text: #18181b;
+  --muted: #71717a;
+  --border: #e4e4e7;
+  --done-text: #a1a1aa;
+}
+body.dark {
+  --bg: #16161e;
+  --surface: #22222e;
+  --text: #e4e4e8;
+  --muted: #606070;
+  --border: #2e2e3e;
+  --done-text: #404050;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px 12px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hdr-left { display: flex; flex-direction: column; gap: 1px; }
+.hdr-title { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.hdr-sub { font-size: 13px; color: var(--muted); }
+.hdr-link {
+  font-size: 13px; font-weight: 500;
+  color: var(--accent); text-decoration: none;
+  white-space: nowrap; padding: 4px 0;
+}
+
+/* ── Main content ────────────────────────────────────────────────────────── */
+main { padding: 12px 16px 0; max-width: 520px; margin: 0 auto; }
+
+.section-lbl {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--muted);
+  margin: 16px 0 8px 4px;
+}
+.section-lbl:first-child { margin-top: 4px; }
+
+/* ── Task rows ───────────────────────────────────────────────────────────── */
+.task-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 6px;
+  cursor: pointer; user-select: none;
+  transition: opacity .12s;
+}
+.task-row:active { opacity: .65; }
+.task-row.is-header {
+  background: transparent; padding: 2px 4px; margin-bottom: 2px;
+  cursor: default; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .4px; color: var(--muted);
+}
+.task-row.is-header:active { opacity: 1; }
+.task-row.indent-1 { margin-left: 16px; }
+.task-row.indent-2 { margin-left: 32px; }
+
+.chk {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s, border-color .12s;
+}
+.chk.done { background: var(--accent); border-color: var(--accent); }
+.chk.done::after {
+  content: '';
+  width: 5px; height: 9px;
+  border-right: 2px solid #fff; border-bottom: 2px solid #fff;
+  transform: rotate(45deg) translate(-1px, -1px);
+  display: block;
+}
+
+.task-text { flex: 1; font-size: 15px; line-height: 1.35; min-width: 0; }
+.task-text.done { text-decoration: line-through; color: var(--done-text); }
+.task-time { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+
+.empty-msg {
+  text-align: center; color: var(--muted); font-size: 14px;
+  padding: 28px 0 12px;
+}
+
+/* ── Upcoming section ────────────────────────────────────────────────────── */
+.upcoming-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; padding: 10px 4px;
+  color: var(--accent); font-size: 13px; font-weight: 500;
+  cursor: pointer; margin-top: 4px;
+}
+.upcoming-btn .arr { display: inline-block; transition: transform .18s; font-style: normal; }
+.upcoming-btn.open .arr { transform: rotate(90deg); }
+#upcoming-body { display: none; }
+#upcoming-body.open { display: block; }
+.dg-label { font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 0 6px 4px; }
+
+/* ── Add task area ───────────────────────────────────────────────────────── */
+.add-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.add-row { display: flex; gap: 8px; }
+.add-input {
+  flex: 1; border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 11px 14px; font-size: 15px;
+  background: var(--surface); color: var(--text); outline: none;
+  -webkit-appearance: none;
+}
+.add-input:focus { border-color: var(--accent); }
+.add-input::placeholder { color: var(--muted); }
+.add-submit {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 10px; padding: 11px 18px;
+  font-size: 15px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+.add-submit:active { opacity: .8; }
+
+.date-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.chip {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 5px 12px;
+  font-size: 13px; cursor: pointer; color: var(--text);
+}
+.chip.active { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb),.08); }
+.chip:active { opacity: .7; }
+
+#custom-date-wrap { display: none; margin-top: 8px; }
+#custom-date-wrap.show { display: block; }
+#custom-date {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; font-size: 15px;
+  background: var(--surface); color: var(--text); outline: none;
+  -webkit-appearance: none;
+}
+#custom-date:focus { border-color: var(--accent); }
+
+.footer-note { font-size: 11px; color: var(--muted); text-align: center; padding: 20px 0 4px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-left">
+    <div class="hdr-title" id="hdr-day"></div>
+    <div class="hdr-sub" id="hdr-date"></div>
+  </div>
+  <a class="hdr-link" href="./">Full app →</a>
+</header>
+
+<main>
+  <div id="today-list"></div>
+
+  <button class="upcoming-btn" id="upcoming-btn">
+    <i class="arr">›</i> Upcoming (7 days)
+  </button>
+  <div id="upcoming-body"></div>
+
+  <div class="add-section">
+    <div class="add-row">
+      <input id="new-text" class="add-input" type="text"
+        placeholder="Add a task…"
+        autocomplete="off" autocorrect="on" autocapitalize="sentences"
+        spellcheck="true">
+      <button class="add-submit" id="add-btn">Add</button>
+    </div>
+    <div class="date-chips">
+      <button class="chip active" data-val="">Today</button>
+      <button class="chip" data-val="1">Tomorrow</button>
+      <button class="chip" data-val="7">Next week</button>
+      <button class="chip" data-val="custom">Pick date…</button>
+    </div>
+    <div id="custom-date-wrap">
+      <input type="date" id="custom-date">
+    </div>
+  </div>
+
+  <div class="footer-note">Changes saved locally &amp; synced to cloud</div>
+</main>
+
+<script>
+const STORAGE_KEY  = 'habit-watcher-v1';
+const PREFS_KEY    = 'habit-watcher-prefs';
+const ACCENT_KEY   = 'habit-watcher-accent';
+const SB_URL       = 'https://jknktlasejgfdeanrxed.supabase.co';
+const SB_ANON      = 'sb_publishable_YBWnnJq_Zwipp5kLJS3CBw_vDPsrOZy';
+const SB_AUTH_KEY  = 'sb-jknktlasejgfdeanrxed-auth-token';
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function toDateStr(dt) {
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+function todayStr() { return toDateStr(new Date()); }
+
+function offsetDate(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return toDateStr(d);
+}
+
+function fmtDateLabel(ds) {
+  const [y, m, d] = ds.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (ds === offsetDate(1)) return 'Tomorrow';
+  return `${DAYS[dt.getDay()]} ${MONTHS[m-1]} ${d}`;
+}
+
+function fmtTime(t) {
+  if (!t) return '';
+  const [h, mn] = t.split(':').map(Number);
+  const ap = h < 12 ? 'am' : 'pm';
+  const hr = h % 12 || 12;
+  return mn ? `${hr}:${String(mn).padStart(2,'0')}${ap}` : `${hr}${ap}`;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let state = {
+  tasks: [], uid: 0, projects: [], pUid: 0,
+  horizons: [], hUid: 0, hItemUid: 0,
+  folders: [], fUid: 0,
+  hideCompleted: false, tlStart: 0, tlEnd: 0, savedAt: 0
+};
+
+let _justToggled = new Set(); // task IDs toggled this session
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveState() {
+  state.savedAt = Date.now();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  pushToSupabase();
+}
+
+async function pushToSupabase() {
+  try {
+    const raw = localStorage.getItem(SB_AUTH_KEY);
+    if (!raw) return;
+    const auth = JSON.parse(raw);
+    const token = auth?.access_token;
+    const userId = auth?.user?.id;
+    if (!token || !userId) return;
+    await fetch(`${SB_URL}/rest/v1/user_data?on_conflict=id`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_ANON,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ id: userId, data: state })
+    });
+  } catch(e) {}
+}
+
+// ── Task helpers ──────────────────────────────────────────────────────────────
+
+function isAutoRep(t) { return !!(t.repeat && t.repeat.freq !== 'manual'); }
+
+function isDoneFor(t, ds) {
+  return isAutoRep(t) ? (t.done && t.doneDate === ds) : t.done;
+}
+
+function taskDateFor(t) {
+  // Resolve date for normal tasks, including inherited date from parent header
+  let date = t.sched?.date ?? null;
+  if (!date && t.indent > 0) {
+    const idx = state.tasks.indexOf(t);
+    for (let i = idx - 1; i >= 0; i--) {
+      if (state.tasks[i].indent < t.indent) {
+        date = state.tasks[i].sched?.date ?? null;
+        break;
+      }
+    }
+  }
+  return date;
+}
+
+function matchesDate(t, ds) {
+  const ts = todayStr();
+  if (t.repeat) {
+    const { freq, day, dayOfMonth, until } = t.repeat;
+    if (freq === 'manual') return false;
+    const start = t.sched?.date || ts;
+    if (ds < start) return false;
+    if (until && ds > until) return false;
+    // Don't show future repeaters in upcoming (respect main app pref)
+    if (ds > ts) {
+      try {
+        const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+        if (prefs.showFutureRepeaters === false) return false;
+      } catch(e) {}
+    }
+    if (freq === 'daily') return true;
+    const dt = new Date(ds + 'T00:00:00');
+    const monDow = (dt.getDay() + 6) % 7;
+    if (freq === 'weekly') return monDow === day;
+    if (freq === 'monthly') return dt.getDate() === dayOfMonth;
+    return false;
+  }
+  if (t.folderId != null && !t.sched) return false;
+  if (ds === ts) {
+    const d = taskDateFor(t);
+    return !d || d === ts || (d < ts && !t.done);
+  }
+  return taskDateFor(t) === ds;
+}
+
+function shouldShowToday(t) {
+  if (!matchesDate(t, todayStr())) return false;
+  if (!t.isHeader) {
+    const ts = todayStr();
+    const auto = isAutoRep(t);
+    const done = isDoneFor(t, ts);
+    // Hide old completed tasks (done + no scheduled date + not repeater)
+    // unless the user just toggled them in this session (for undo)
+    if (done && !auto && !t.sched?.date && !_justToggled.has(t.id)) return false;
+  }
+  return true;
+}
+
+function toggleDone(t) {
+  const ts = todayStr();
+  const auto = isAutoRep(t);
+  const wasDone = isDoneFor(t, ts);
+  _justToggled.add(t.id);
+  if (auto) {
+    t.done = !wasDone;
+    t.doneDate = t.done ? ts : null;
+  } else {
+    t.done = !t.done;
+    if (t.done) t.sched = null;
+  }
+  saveState();
+  render();
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+
+function applyTheme() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+    document.body.classList.toggle('dark', !!prefs.darkMode);
+  } catch(e) {}
+  try {
+    const acc = JSON.parse(localStorage.getItem(ACCENT_KEY));
+    if (acc) {
+      document.documentElement.style.setProperty('--accent', acc.hex);
+      document.documentElement.style.setProperty('--accent-rgb', acc.rgb);
+      document.getElementById('theme-color-meta').content = acc.hex;
+    }
+  } catch(e) {}
+}
+
+function buildTaskEl(t, ds) {
+  if (t.isHeader) {
+    const el = document.createElement('div');
+    el.className = 'task-row is-header';
+    el.textContent = t.text;
+    return el;
+  }
+  const done = isDoneFor(t, ds);
+  const row = document.createElement('div');
+  row.className = 'task-row' + (t.indent === 1 ? ' indent-1' : t.indent >= 2 ? ' indent-2' : '');
+  row.addEventListener('click', () => toggleDone(t));
+
+  const chk = document.createElement('div');
+  chk.className = 'chk' + (done ? ' done' : '');
+
+  const txt = document.createElement('div');
+  txt.className = 'task-text' + (done ? ' done' : '');
+  txt.textContent = t.text;
+
+  row.append(chk, txt);
+
+  if (t.sched?.t) {
+    const time = document.createElement('div');
+    time.className = 'task-time';
+    time.textContent = fmtTime(t.sched.t);
+    row.append(time);
+  }
+  return row;
+}
+
+function render() {
+  const ts = todayStr();
+  const todayEl = document.getElementById('today-list');
+  const upEl    = document.getElementById('upcoming-body');
+
+  // ── Today ────────────────────────────────────────────────────────────────
+  const todayItems = state.tasks.filter(t => shouldShowToday(t));
+  todayEl.innerHTML = '';
+
+  if (!todayItems.length) {
+    const em = document.createElement('div');
+    em.className = 'empty-msg';
+    em.textContent = 'No tasks for today ✓';
+    todayEl.append(em);
+  } else {
+    todayItems.forEach(t => todayEl.append(buildTaskEl(t, ts)));
+  }
+
+  // ── Upcoming ─────────────────────────────────────────────────────────────
+  upEl.innerHTML = '';
+  let hasUpcoming = false;
+
+  for (let i = 1; i <= 7; i++) {
+    const ds = offsetDate(i);
+    const dayTasks = state.tasks.filter(t => !t.isHeader && matchesDate(t, ds) && !isDoneFor(t, ds));
+    if (!dayTasks.length) continue;
+    hasUpcoming = true;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'dg-label';
+    lbl.textContent = fmtDateLabel(ds);
+    upEl.append(lbl);
+    dayTasks.forEach(t => upEl.append(buildTaskEl(t, ds)));
+  }
+
+  if (!hasUpcoming) {
+    const em = document.createElement('div');
+    em.className = 'empty-msg';
+    em.style.paddingTop = '12px';
+    em.textContent = 'Nothing coming up';
+    upEl.append(em);
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+function updateHeader() {
+  const dt = new Date();
+  const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('hdr-day').textContent  = DAYS[dt.getDay()];
+  document.getElementById('hdr-date').textContent = `${MONTHS[dt.getMonth()]} ${dt.getDate()}`;
+}
+
+// ── Add task ──────────────────────────────────────────────────────────────────
+
+let selectedDateVal = ''; // '' = today, '1' = +1 day, '7' = +7 days, 'custom'
+
+function resolveTargetDate() {
+  if (!selectedDateVal) return null;
+  if (selectedDateVal === 'custom') {
+    const v = document.getElementById('custom-date').value;
+    return v || null;
+  }
+  return offsetDate(parseInt(selectedDateVal, 10));
+}
+
+function addTask() {
+  const inp  = document.getElementById('new-text');
+  const text = inp.value.trim();
+  if (!text) { inp.focus(); return; }
+
+  const date  = resolveTargetDate();
+  const sched = date ? { date } : null;
+
+  state.tasks.push({ id: ++state.uid, text, isHeader: false, done: false, indent: 0, color: null, sched });
+  inp.value = '';
+  saveState();
+  render();
+  inp.focus();
+}
+
+// ── Wire up UI ────────────────────────────────────────────────────────────────
+
+// Upcoming toggle
+document.getElementById('upcoming-btn').addEventListener('click', function() {
+  this.classList.toggle('open');
+  document.getElementById('upcoming-body').classList.toggle('open');
+});
+
+// Date chips
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    selectedDateVal = this.dataset.val;
+    const wrap = document.getElementById('custom-date-wrap');
+    wrap.classList.toggle('show', selectedDateVal === 'custom');
+  });
+});
+
+// Add button / Enter key
+document.getElementById('add-btn').addEventListener('click', addTask);
+document.getElementById('new-text').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+// Set custom date picker minimum to tomorrow
+const custEl = document.getElementById('custom-date');
+custEl.min = offsetDate(1);
+custEl.value = offsetDate(1);
+
+// Cross-tab sync: if main app saves while this page is open
+window.addEventListener('storage', e => {
+  if (e.key === STORAGE_KEY) { loadState(); render(); }
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+loadState();
+applyTheme();
+updateHeader();
+render();
+</script>
+</body>
+</html>
